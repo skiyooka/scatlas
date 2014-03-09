@@ -19,20 +19,20 @@
 package com.laialfa
 
 import org.apache.log4j.Logger
+import scala.swing.{Frame, SimpleSwingApplication}
 
 
 /**
  * Add to VM options:
  *   -Xdock:name=Scatlas (on mac)
  */
-object Main {
+object Main extends SimpleSwingApplication {
 
   private val log = Logger.getLogger(getClass)
 
   private val APP_TITLE: String = "Scatlas"
 
-  def main(args: Array[String]) {
-    log.info("Hello world from Main")
+  override def top: Frame = new AtlasFrame {
+    title = APP_TITLE
   }
 }
-
