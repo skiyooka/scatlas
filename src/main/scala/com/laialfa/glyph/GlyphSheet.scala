@@ -19,7 +19,7 @@
 package com.laialfa.glyph
 
 import java.awt.image.BufferedImage
-import java.awt.{GraphicsConfiguration, FontMetrics, Color, RenderingHints, Transparency, Font, GraphicsEnvironment}
+import java.awt.{Graphics, GraphicsConfiguration, FontMetrics, Color, RenderingHints, Transparency, Font, GraphicsEnvironment}
 import java.nio.ByteBuffer
 
 import scala.swing.Graphics2D
@@ -54,11 +54,11 @@ class GlyphSheet(val spriteSize: Int = 64) {
 
   private val gc: GraphicsConfiguration = GraphicsEnvironment.getLocalGraphicsEnvironment.getDefaultScreenDevice.getDefaultConfiguration
 
-  private var ptSize = 0
+  private var ptSize: Int = 0
   private var fontMetrics: FontMetrics = null
   private var image: BufferedImage = null
 
-  val NUM_SPRITES_ALONG_EDGE = 16
+  val NUM_SPRITES_ALONG_EDGE: Int = 16
 
   /**
    * @return maximum pt size used for a given tile
@@ -75,7 +75,7 @@ class GlyphSheet(val spriteSize: Int = 64) {
    */
   def getFontMetrics: FontMetrics = {
     if (fontMetrics == null) {
-      val graphics = gc.createCompatibleImage(1, 1).getGraphics
+      val graphics: Graphics = gc.createCompatibleImage(1, 1).getGraphics
       fontMetrics = graphics.getFontMetrics(new Font("SansSerif", Font.PLAIN, getPtSize))
     }
     fontMetrics
@@ -92,9 +92,9 @@ class GlyphSheet(val spriteSize: Int = 64) {
   }
 
   // pre-calculate glyph widths in pixels
-  private val numGlyphs = NUM_SPRITES_ALONG_EDGE * NUM_SPRITES_ALONG_EDGE
+  private val numGlyphs: Int = NUM_SPRITES_ALONG_EDGE * NUM_SPRITES_ALONG_EDGE
   private val glyphWidths: Array[Int] = Array.ofDim(numGlyphs)
-  for (i <- 0 until numGlyphs) {
+  for (i: Int <- 0 until numGlyphs) {
     glyphWidths(i) = getFontMetrics.charWidth(i)
   }
 
@@ -118,11 +118,11 @@ class GlyphSheet(val spriteSize: Int = 64) {
    * @return maximum pt size that will fit in a square image of given size
    */
   private def getMaxPtSize(size: Int): Int = {
-    val g2 = gc.createCompatibleImage(size, size).getGraphics.asInstanceOf[Graphics2D]
+    val g2: Graphics2D = gc.createCompatibleImage(size, size).getGraphics.asInstanceOf[Graphics2D]
 
-    var max_pt_size = size * 2  // starting size
+    var max_pt_size: Int = size * 2  // starting size
 
-    var fits = false
+    var fits: Boolean = false
     while (!fits) {
       max_pt_size -= 1
       if (max_pt_size == 0) {
@@ -150,14 +150,14 @@ class GlyphSheet(val spriteSize: Int = 64) {
    */
   private def createImage(symbol: String, ptSize: Int, spriteSize: Int): BufferedImage = {
     // with TRANSLUCENT rgb is either 0 or 255 and alpha can vary between
-    val bufferedImage = gc.createCompatibleImage(spriteSize, spriteSize, Transparency.TRANSLUCENT)
+    val bufferedImage: BufferedImage = gc.createCompatibleImage(spriteSize, spriteSize, Transparency.TRANSLUCENT)
     val g2: Graphics2D = bufferedImage.createGraphics()
 
     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
     g2.setColor(Color.white)
     g2.setFont(new Font("SansSerif", Font.PLAIN, ptSize))
 
-    val fm = g2.getFontMetrics
+    val fm: FontMetrics = g2.getFontMetrics
     g2.drawString(symbol, spriteSize/2 - fm.stringWidth(symbol)/2, fm.getAscent)
     g2.dispose()
 
@@ -182,20 +182,20 @@ class GlyphSheet(val spriteSize: Int = 64) {
    * @param spriteSize             square edge length of a single sprite/glyph
    */
   private def createSpriteSheet(ptSize: Int, numSpritesAlongEdge: Int, spriteSize: Int): BufferedImage = {
-    val length = numSpritesAlongEdge * spriteSize
-    val spriteSheet = gc.createCompatibleImage(length, length, Transparency.TRANSLUCENT)
+    val length: Int = numSpritesAlongEdge * spriteSize
+    val spriteSheet: BufferedImage = gc.createCompatibleImage(length, length, Transparency.TRANSLUCENT)
     val g2: Graphics2D = spriteSheet.createGraphics()
 
     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
 
-    for (i <- 0 to numSpritesAlongEdge * numSpritesAlongEdge) {
-      val col = i % numSpritesAlongEdge
-      val row = i / numSpritesAlongEdge
-      val ch = i.toChar
+    for (i: Int <- 0 to numSpritesAlongEdge * numSpritesAlongEdge) {
+      val col: Int = i % numSpritesAlongEdge
+      val row: Int = i / numSpritesAlongEdge
+      val ch: Char = i.toChar
 
       g2.drawImage(createImage(ch.toString, ptSize, spriteSize),
-        col * spriteSize,
-        (numSpritesAlongEdge - 1 - row) * spriteSize, null)
+                   col * spriteSize,
+                   (numSpritesAlongEdge - 1 - row) * spriteSize, null)
     }
     g2.dispose()
 
@@ -211,9 +211,9 @@ class GlyphSheet(val spriteSize: Int = 64) {
 
     // OpenGL pixel buffers start on the bottom row and work upwards i.e. the
     // origin is in the bottom left corner.
-    for (y <- 0 until bi.getHeight) {
-      for (x <- 0 until bi.getWidth) {
-        val argb = bi.getRGB(x, bi.getHeight - 1 - y)  // TYPE_INT_ARGB
+    for (y: Int <- 0 until bi.getHeight) {
+      for (x: Int <- 0 until bi.getWidth) {
+        val argb: Int = bi.getRGB(x, bi.getHeight - 1 - y)  // TYPE_INT_ARGB
 
         val alpha: Byte = ((argb >> 24) & 0xff).toByte
         val   red: Byte = ((argb >> 16) & 0xff).toByte

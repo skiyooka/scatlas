@@ -28,7 +28,7 @@ import scala.swing.{Frame, SimpleSwingApplication}
  */
 object Main extends SimpleSwingApplication {
 
-  private val log = Logger.getLogger(getClass)
+  private val log: Logger = Logger.getLogger(getClass)
 
   private val APP_TITLE: String = "Scatlas"
 

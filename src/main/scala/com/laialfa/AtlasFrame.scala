@@ -19,7 +19,7 @@
 package com.laialfa
 
 import com.laialfa.glyph.GlyphSheet
-import java.awt.{Dimension, Font, Graphics2D, Color}
+import java.awt.{FontMetrics, Dimension, Font, Graphics2D, Color}
 import scala.swing.{Panel, MainFrame}
 
 
@@ -29,7 +29,7 @@ class AtlasFrame extends MainFrame {
   preferredSize = new Dimension(800, 800)
   visible = true
 
-  private val glyphSheet = new GlyphSheet()
+  private val glyphSheet: GlyphSheet = new GlyphSheet()
 
   /**
    * From the JDK source: the advance of a String is not necessarily the
@@ -43,41 +43,41 @@ class AtlasFrame extends MainFrame {
    * @param y         screen coordinate (baseline)
    */
   private def drawString(g: Graphics2D, text: String, color: Color, ptSize: Int, x: Int, y: Int) {
-    val scaleFactor = ptSize.toDouble / glyphSheet.getPtSize
+    val scaleFactor: Double = ptSize.toDouble / glyphSheet.getPtSize
 
     val destDimen: Int = math.round(scaleFactor * glyphSheet.spriteSize).toInt
     val destAscent: Int = math.round(scaleFactor * glyphSheet.getFontMetrics.getAscent).toInt
 
-    var unscaledAnchorX = 0  // will advance each iteration
-    val yDest = y - destAscent  // constant (will be -ve for OpenGL)
+    var unscaledAnchorX: Int = 0  // will advance each iteration
+    val yDest: Int = y - destAscent  // constant (will be -ve for OpenGL)
 
-    for (charPos <- 0 until text.length()) {
-      val ch = text.charAt(charPos)
-      val unscaledCharWidth = glyphSheet.getGlyphWidth(ch.toInt)
+    for (charPos: Int <- 0 until text.length()) {
+      val ch: Char = text.charAt(charPos)
+      val unscaledCharWidth: Int = glyphSheet.getGlyphWidth(ch.toInt)
 
-      val col = ch % glyphSheet.NUM_SPRITES_ALONG_EDGE
-      val row = ch / glyphSheet.NUM_SPRITES_ALONG_EDGE
+      val col: Int = ch % glyphSheet.NUM_SPRITES_ALONG_EDGE
+      val row: Int = ch / glyphSheet.NUM_SPRITES_ALONG_EDGE
 
       // copy template from sprite sheet
-      val xSrc = col * glyphSheet.spriteSize
+      val xSrc: Int = col * glyphSheet.spriteSize
       // this craziness because 0 is bottom of image in OpenGL
-      val ySrc = (glyphSheet.NUM_SPRITES_ALONG_EDGE - 1 - row) * glyphSheet.spriteSize
+      val ySrc: Int = (glyphSheet.NUM_SPRITES_ALONG_EDGE - 1 - row) * glyphSheet.spriteSize
 
-      val shim = (glyphSheet.spriteSize - unscaledCharWidth) / 2.0
+      val shim: Double = (glyphSheet.spriteSize - unscaledCharWidth) / 2.0
 
-      val xDest = x + math.round(scaleFactor * (unscaledAnchorX - shim)).toInt
+      val xDest: Int = x + math.round(scaleFactor * (unscaledAnchorX - shim)).toInt
 
       g.drawImage(glyphSheet.getImage,
-        xDest,
-        yDest,
-        xDest + destDimen,
-        yDest + destDimen,
+                  xDest,
+                  yDest,
+                  xDest + destDimen,
+                  yDest + destDimen,
 
-        xSrc,
-        ySrc,
-        xSrc + glyphSheet.spriteSize,
-        ySrc + glyphSheet.spriteSize,
-        null)
+                  xSrc,
+                  ySrc,
+                  xSrc + glyphSheet.spriteSize,
+                  ySrc + glyphSheet.spriteSize,
+                  null)
 
       unscaledAnchorX += unscaledCharWidth  // horizontal advance includes spacing
     }
@@ -87,9 +87,9 @@ class AtlasFrame extends MainFrame {
    * String width in pixels using pre-calculated metrics.
    */
   private def stringWidth(g: Graphics2D, text: String, ptSize: Int): Int = {
-    var sum = 0
+    var sum: Int = 0
 
-    for (charPos <- 0 until text.length()) {
+    for (charPos: Int <- 0 until text.length()) {
       sum += glyphSheet.getGlyphWidth(text.charAt(charPos))
     }
 
@@ -109,7 +109,7 @@ class AtlasFrame extends MainFrame {
    * Graphics2D version for comparison purposes.
    */
   private def stringWidthJava(g: Graphics2D, text: String, ptSize: Int): Int = {
-    val fm = g.getFontMetrics(new Font("SansSerif", Font.PLAIN, ptSize))
+    val fm: FontMetrics = g.getFontMetrics(new Font("SansSerif", Font.PLAIN, ptSize))
     fm.stringWidth(text)
   }
 
@@ -117,9 +117,9 @@ class AtlasFrame extends MainFrame {
     override def paint(g: Graphics2D) {
       g.setColor(Color.white)
 
-      for (i <- 0 to glyphSheet.NUM_SPRITES_ALONG_EDGE * glyphSheet.NUM_SPRITES_ALONG_EDGE) {
-        val col = i % glyphSheet.NUM_SPRITES_ALONG_EDGE
-        val row = i / glyphSheet.NUM_SPRITES_ALONG_EDGE
+      for (i: Int <- 0 to glyphSheet.NUM_SPRITES_ALONG_EDGE * glyphSheet.NUM_SPRITES_ALONG_EDGE) {
+        val col: Int = i % glyphSheet.NUM_SPRITES_ALONG_EDGE
+        val row: Int = i / glyphSheet.NUM_SPRITES_ALONG_EDGE
         g.drawRect(col * glyphSheet.spriteSize,
           (glyphSheet.NUM_SPRITES_ALONG_EDGE - 1 - row) * glyphSheet.spriteSize,
           glyphSheet.spriteSize,
@@ -127,8 +127,8 @@ class AtlasFrame extends MainFrame {
       }
       g.drawImage(glyphSheet.getImage, 0, 0, null)
 
-      var ptSize = glyphSheet.getPtSize
-      var message = "The quick brown fox"
+      var ptSize: Int = glyphSheet.getPtSize
+      var message: String = "The quick brown fox"
       drawString(g, message, Color.green, ptSize, 100, 64)
       drawStringJava(g, message, Color.green, ptSize, 100, 128)
 
