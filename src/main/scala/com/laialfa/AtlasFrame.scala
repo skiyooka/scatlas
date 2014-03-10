@@ -31,6 +31,50 @@ class AtlasFrame extends MainFrame {
 
   private val glyphSheet: GlyphSheet = new GlyphSheet()
 
+  contents = new Panel {
+    override def paint(g: Graphics2D) {
+      g.setColor(Color.white)
+
+      for (i: Int <- 0 to glyphSheet.NUM_SPRITES_ALONG_EDGE * glyphSheet.NUM_SPRITES_ALONG_EDGE) {
+        val col: Int = i % glyphSheet.NUM_SPRITES_ALONG_EDGE
+        val row: Int = i / glyphSheet.NUM_SPRITES_ALONG_EDGE
+        g.drawRect(col * glyphSheet.spriteSize,
+          (glyphSheet.NUM_SPRITES_ALONG_EDGE - 1 - row) * glyphSheet.spriteSize,
+          glyphSheet.spriteSize,
+          glyphSheet.spriteSize)
+      }
+      g.drawImage(glyphSheet.getImage, 0, 0, null)
+
+      var ptSize: Int = glyphSheet.getPtSize
+      var message: String = "The quick brown fox"
+      drawString(g, message, Color.green, ptSize, 100, 64)
+      drawStringJava(g, message, Color.green, ptSize, 100, 128)
+
+      drawStringJava(g, "width " +     stringWidth(g, message, ptSize), Color.green, 12, 800, 64)
+      drawStringJava(g, "width " + stringWidthJava(g, message, ptSize), Color.green, 12, 800, 128)
+
+      ptSize = 12
+      message = "jumped over the lazy dogs!  The advance of a String is not necessarily the sum of the advances of its characters."
+      drawString(g, message, Color.green, ptSize, 100, 192)
+      drawStringJava(g, message, Color.green, ptSize, 100, 256)
+
+      drawStringJava(g, "width " +     stringWidth(g, message, ptSize), Color.green, 12, 800, 192)
+      drawStringJava(g, "width " + stringWidthJava(g, message, ptSize), Color.green, 12, 800, 256)
+
+      ptSize = 108
+      message = "Bigger bigger"
+      drawString(g, message, Color.green, ptSize, 100, 384)
+      drawStringJava(g, message, Color.green, ptSize, 100, 512)
+
+      drawStringJava(g, "width " +     stringWidth(g, message, ptSize), Color.green, 12, 800, 384)
+      drawStringJava(g, "width " + stringWidthJava(g, message, ptSize), Color.green, 12, 800, 512)
+    }
+  }
+
+  /////////////////////
+  // private methods //
+  /////////////////////
+
   /**
    * From the JDK source: the advance of a String is not necessarily the
    * sum of the advances of its characters.
@@ -111,45 +155,5 @@ class AtlasFrame extends MainFrame {
   private def stringWidthJava(g: Graphics2D, text: String, ptSize: Int): Int = {
     val fm: FontMetrics = g.getFontMetrics(new Font("SansSerif", Font.PLAIN, ptSize))
     fm.stringWidth(text)
-  }
-
-  contents = new Panel {
-    override def paint(g: Graphics2D) {
-      g.setColor(Color.white)
-
-      for (i: Int <- 0 to glyphSheet.NUM_SPRITES_ALONG_EDGE * glyphSheet.NUM_SPRITES_ALONG_EDGE) {
-        val col: Int = i % glyphSheet.NUM_SPRITES_ALONG_EDGE
-        val row: Int = i / glyphSheet.NUM_SPRITES_ALONG_EDGE
-        g.drawRect(col * glyphSheet.spriteSize,
-          (glyphSheet.NUM_SPRITES_ALONG_EDGE - 1 - row) * glyphSheet.spriteSize,
-          glyphSheet.spriteSize,
-          glyphSheet.spriteSize)
-      }
-      g.drawImage(glyphSheet.getImage, 0, 0, null)
-
-      var ptSize: Int = glyphSheet.getPtSize
-      var message: String = "The quick brown fox"
-      drawString(g, message, Color.green, ptSize, 100, 64)
-      drawStringJava(g, message, Color.green, ptSize, 100, 128)
-
-      drawStringJava(g, "width " +     stringWidth(g, message, ptSize), Color.green, 12, 800, 64)
-      drawStringJava(g, "width " + stringWidthJava(g, message, ptSize), Color.green, 12, 800, 128)
-
-      ptSize = 12
-      message = "jumped over the lazy dogs!  The advance of a String is not necessarily the sum of the advances of its characters."
-      drawString(g, message, Color.green, ptSize, 100, 192)
-      drawStringJava(g, message, Color.green, ptSize, 100, 256)
-
-      drawStringJava(g, "width " +     stringWidth(g, message, ptSize), Color.green, 12, 800, 192)
-      drawStringJava(g, "width " + stringWidthJava(g, message, ptSize), Color.green, 12, 800, 256)
-
-      ptSize = 108
-      message = "Bigger bigger"
-      drawString(g, message, Color.green, ptSize, 100, 384)
-      drawStringJava(g, message, Color.green, ptSize, 100, 512)
-
-      drawStringJava(g, "width " +     stringWidth(g, message, ptSize), Color.green, 12, 800, 384)
-      drawStringJava(g, "width " + stringWidthJava(g, message, ptSize), Color.green, 12, 800, 512)
-    }
   }
 }

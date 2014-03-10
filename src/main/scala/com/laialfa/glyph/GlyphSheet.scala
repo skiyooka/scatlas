@@ -60,6 +60,13 @@ class GlyphSheet(val spriteSize: Int = 64) {
 
   val NUM_SPRITES_ALONG_EDGE: Int = 16
 
+  // pre-calculate glyph widths in pixels
+  private val numGlyphs: Int = NUM_SPRITES_ALONG_EDGE * NUM_SPRITES_ALONG_EDGE
+  private val glyphWidths: Array[Int] = Array.ofDim(numGlyphs)
+  for (i: Int <- 0 until numGlyphs) {
+    glyphWidths(i) = getFontMetrics.charWidth(i)
+  }
+
   /**
    * @return maximum pt size used for a given tile
    */
@@ -91,13 +98,6 @@ class GlyphSheet(val spriteSize: Int = 64) {
     image
   }
 
-  // pre-calculate glyph widths in pixels
-  private val numGlyphs: Int = NUM_SPRITES_ALONG_EDGE * NUM_SPRITES_ALONG_EDGE
-  private val glyphWidths: Array[Int] = Array.ofDim(numGlyphs)
-  for (i: Int <- 0 until numGlyphs) {
-    glyphWidths(i) = getFontMetrics.charWidth(i)
-  }
-
   /**
    * @return width in pixels of given glyph index
    */
@@ -111,6 +111,40 @@ class GlyphSheet(val spriteSize: Int = 64) {
   def getIncr: Float = {
     (1.0 / NUM_SPRITES_ALONG_EDGE).toFloat
   }
+
+  /**
+   * Create a byte buffer of TYPE_INT_ARGB that is suitable for glTexImage2D
+   * or gluBuild2DMipmaps.
+   */
+  def createByteBuffer(bi: BufferedImage): ByteBuffer = {
+    val pixels: ByteBuffer = ByteBuffer.allocate(bi.getWidth * bi.getHeight * 4)
+
+    // OpenGL pixel buffers start on the bottom row and work upwards i.e. the
+    // origin is in the bottom left corner.
+    for (y: Int <- 0 until bi.getHeight) {
+      for (x: Int <- 0 until bi.getWidth) {
+        val argb: Int = bi.getRGB(x, bi.getHeight - 1 - y)  // TYPE_INT_ARGB
+
+        val alpha: Byte = ((argb >> 24) & 0xff).toByte
+        val   red: Byte = ((argb >> 16) & 0xff).toByte
+        val green: Byte = ((argb >>  8) & 0xff).toByte
+        val  blue: Byte =         (argb & 0xff).toByte
+
+        // OpenGL texture takes RGBA
+        pixels.put(red)
+        pixels.put(green)
+        pixels.put(blue)
+        pixels.put(alpha)
+      }
+    }
+
+    pixels.rewind()
+    pixels
+  }
+
+  /////////////////////
+  // private methods //
+  /////////////////////
 
   /**
    * @param size    sprite square edge length
@@ -200,35 +234,5 @@ class GlyphSheet(val spriteSize: Int = 64) {
     g2.dispose()
 
     spriteSheet
-  }
-
-  /**
-   * Create a byte buffer of TYPE_INT_ARGB that is suitable for glTexImage2D
-   * or gluBuild2DMipmaps.
-   */
-  def createByteBuffer(bi: BufferedImage): ByteBuffer = {
-    val pixels: ByteBuffer = ByteBuffer.allocate(bi.getWidth * bi.getHeight * 4)
-
-    // OpenGL pixel buffers start on the bottom row and work upwards i.e. the
-    // origin is in the bottom left corner.
-    for (y: Int <- 0 until bi.getHeight) {
-      for (x: Int <- 0 until bi.getWidth) {
-        val argb: Int = bi.getRGB(x, bi.getHeight - 1 - y)  // TYPE_INT_ARGB
-
-        val alpha: Byte = ((argb >> 24) & 0xff).toByte
-        val   red: Byte = ((argb >> 16) & 0xff).toByte
-        val green: Byte = ((argb >>  8) & 0xff).toByte
-        val  blue: Byte =         (argb & 0xff).toByte
-
-        // OpenGL texture takes RGBA
-        pixels.put(red)
-        pixels.put(green)
-        pixels.put(blue)
-        pixels.put(alpha)
-      }
-    }
-
-    pixels.rewind()
-    pixels
   }
 }
