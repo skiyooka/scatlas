@@ -20,7 +20,10 @@ package com.laialfa
 
 import com.laialfa.glyph.GlyphSheet
 import java.awt.{FontMetrics, Dimension, Font, Graphics2D, Color}
-import scala.swing.{Panel, MainFrame}
+import java.io.File
+import scala.swing.event.ButtonClicked
+import scala.swing.Dialog.Result
+import scala.swing.{Dialog, Panel, CheckMenuItem, Separator, FileChooser, Action, MenuItem, Menu, MenuBar, MainFrame}
 
 
 class AtlasFrame extends MainFrame {
@@ -31,17 +34,56 @@ class AtlasFrame extends MainFrame {
 
   private val glyphSheet: GlyphSheet = new GlyphSheet()
 
+  private var drawGridLines: Boolean = false
+
+  private var optCurrentFile: Option[File] = None
+
+  private val SAVE_AS = "Save As..."
+
+  menuBar = new MenuBar {
+    contents += new Menu("File") {
+      contents += new MenuItem("New...")
+      contents += new MenuItem(Action("Open...") {
+        val fc: FileChooser = new FileChooser
+        if (fc.showOpenDialog(AtlasFrame.this.contents.head) == FileChooser.Result.Approve) {
+          load(fc.selectedFile)
+        }
+      })
+      contents += new Separator()
+      contents += new MenuItem(Action("Save") {
+        optCurrentFile match {
+          case Some(f) => save(f)
+          case None => saveAs()
+        }
+      })
+      contents += new MenuItem(Action(SAVE_AS) { saveAs() })
+    }
+    contents += new Menu("View") {
+      contents += new MenuItem("Glyph Preview...")
+      contents += new CheckMenuItem("Grid Lines") {
+        reactions += {
+          case e: ButtonClicked => {
+            drawGridLines = e.source.selected
+            AtlasFrame.this.repaint()
+          }
+        }
+      }
+    }
+  }
+
   contents = new Panel {
     override def paint(g: Graphics2D) {
       g.setColor(Color.white)
 
-      for (i: Int <- 0 to glyphSheet.NUM_SPRITES_ALONG_EDGE * glyphSheet.NUM_SPRITES_ALONG_EDGE) {
-        val col: Int = i % glyphSheet.NUM_SPRITES_ALONG_EDGE
-        val row: Int = i / glyphSheet.NUM_SPRITES_ALONG_EDGE
-        g.drawRect(col * glyphSheet.spriteSize,
-          (glyphSheet.NUM_SPRITES_ALONG_EDGE - 1 - row) * glyphSheet.spriteSize,
-          glyphSheet.spriteSize,
-          glyphSheet.spriteSize)
+      if (drawGridLines) {
+        for (i: Int <- 0 to glyphSheet.NUM_SPRITES_ALONG_EDGE * glyphSheet.NUM_SPRITES_ALONG_EDGE) {
+          val col: Int = i % glyphSheet.NUM_SPRITES_ALONG_EDGE
+          val row: Int = i / glyphSheet.NUM_SPRITES_ALONG_EDGE
+          g.drawRect(col * glyphSheet.spriteSize,
+            (glyphSheet.NUM_SPRITES_ALONG_EDGE - 1 - row) * glyphSheet.spriteSize,
+            glyphSheet.spriteSize,
+            glyphSheet.spriteSize)
+        }
       }
       g.drawImage(glyphSheet.getImage, 0, 0, null)
 
@@ -74,6 +116,40 @@ class AtlasFrame extends MainFrame {
   /////////////////////
   // private methods //
   /////////////////////
+
+  /**
+   * Load image and associated font attributes.
+   *
+   * @param file    to image file
+   */
+  private def load(file: File) {
+    println("TODO: load " + file)
+  }
+
+  /**
+   * Save image and associated font attributes.
+   *
+   * @param file    to image file
+   */
+  private def save(file: File) {
+    println("TODO: save " + file)
+    optCurrentFile = Some(file)
+  }
+
+  private def saveAs() {
+    val fc: FileChooser = new FileChooser { title = SAVE_AS }
+    if (fc.showSaveDialog(contents.head) == FileChooser.Result.Approve) {
+      val file: File = fc.selectedFile
+      if (file.exists()) {
+        Dialog.showConfirmation(contents.head, "Overwrite?", SAVE_AS) match {
+          case Result.Yes => save(file)
+          case _ =>
+        }
+      } else {
+        save(file)
+      }
+    }
+  }
 
   /**
    * From the JDK source: the advance of a String is not necessarily the

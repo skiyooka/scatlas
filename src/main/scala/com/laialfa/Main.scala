@@ -32,6 +32,9 @@ object Main extends SimpleSwingApplication {
 
   private val APP_TITLE: String = "Scatlas"
 
+  // On macs, use screen menubar instead of a menu inside the frame
+  System.setProperty("apple.laf.useScreenMenuBar", "true")
+
   override def top: Frame = new AtlasFrame {
     title = APP_TITLE
   }
