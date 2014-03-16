@@ -22,6 +22,7 @@ import com.laialfa.glyph.GlyphSheet
 import java.awt.{Rectangle, FontMetrics, Dimension, Font, Graphics2D, Color}
 import java.io.{IOException, File}
 import javax.imageio.ImageIO
+import javax.swing.filechooser.FileNameExtensionFilter
 import scala.swing.event.ButtonClicked
 import scala.swing.Dialog.Result
 import scala.swing.{Panel, CheckMenuItem, Separator, FileChooser, MenuItem, Menu, MenuBar, MainFrame, Dialog, Action}
@@ -37,7 +38,11 @@ class AtlasFrame extends MainFrame {
   private val numSpritesAlongEdge: Int = 16
   private val numSprites: Int = 256
 
-  var glyphSheet: GlyphSheet = null
+  private var optGlyphSheet: Option[GlyphSheet] = None
+
+  def setGlyphSheet(glyphSheet: GlyphSheet) {
+    optGlyphSheet = Some(glyphSheet)
+  }
 
   private var drawGridLines: Boolean = false
 
@@ -84,10 +89,12 @@ class AtlasFrame extends MainFrame {
     override def paint(g: Graphics2D) {
       g.setColor(Color.white)
 
-      if (glyphSheet == null) {
+      if (optGlyphSheet.isEmpty) {
         drawStringJava(g, "Create a new glyph atlas via File menu -> New...", Color.white, 14, 64, 64)
         return
       }
+
+      val glyphSheet: GlyphSheet = optGlyphSheet.get
 
       if (drawGridLines) {
         for (i: Int <- 0 until numSprites) {
@@ -142,8 +149,8 @@ class AtlasFrame extends MainFrame {
    * @param file    to image file
    */
   private def save(file: File) {
-    if (glyphSheet == null) {
-      Dialog.showMessage(contents.head, "Error: no glyph atlas to save\nCreate a new one first.")
+    if (optGlyphSheet.isEmpty) {
+      Dialog.showMessage(contents.head, "No glyph atlas to save.\nCreate or open one first.")
       return
     }
 
@@ -151,6 +158,8 @@ class AtlasFrame extends MainFrame {
       Dialog.showMessage(contents.head, "Error: filename must end with .png\nChoose a different name.")
       return
     }
+
+    val glyphSheet: GlyphSheet = optGlyphSheet.get
 
     try {
       ImageIO.write(glyphSheet.getImage, "png", file)
@@ -165,16 +174,19 @@ class AtlasFrame extends MainFrame {
   }
 
   private def saveAs() {
-    if (glyphSheet == null) {
-      Dialog.showMessage(contents.head, "Error: no glyph atlas to save\nCreate a new one first.")
+    if (optGlyphSheet.isEmpty) {
+      Dialog.showMessage(contents.head, "No glyph atlas to save.\nCreate or open one first.")
       return
     }
 
-    val fc: FileChooser = new FileChooser { title = SAVE_AS }
+    val fc: FileChooser = new FileChooser {
+      title = SAVE_AS
+      fileFilter = new FileNameExtensionFilter("PNG file", "png")
+    }
     if (fc.showSaveDialog(contents.head) == FileChooser.Result.Approve) {
       val file: File = fc.selectedFile
       if (file.exists()) {
-        Dialog.showConfirmation(contents.head, "Overwrite?", SAVE_AS) match {
+        Dialog.showConfirmation(contents.head, "Overwrite " + file.getName + "?", SAVE_AS) match {
           case Result.Yes => save(file)
           case _ =>
         }
@@ -196,6 +208,8 @@ class AtlasFrame extends MainFrame {
    * @param y         screen coordinate (baseline)
    */
   private def drawString(g: Graphics2D, text: String, color: Color, ptSize: Int, x: Int, y: Int) {
+    val glyphSheet: GlyphSheet = optGlyphSheet.get
+
     val scaleFactor: Double = ptSize.toDouble / glyphSheet.getPtSize
 
     val destDimen: Int = math.round(scaleFactor * spriteSize).toInt
@@ -239,6 +253,8 @@ class AtlasFrame extends MainFrame {
    * String width in pixels using pre-calculated metrics.
    */
   private def stringWidth(g: Graphics2D, text: String, ptSize: Int): Int = {
+    val glyphSheet: GlyphSheet = optGlyphSheet.get
+
     var sum: Int = 0
 
     for (charPos: Int <- 0 until text.length()) {
