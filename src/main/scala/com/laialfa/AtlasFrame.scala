@@ -19,7 +19,7 @@
 package com.laialfa
 
 import com.laialfa.glyph.GlyphSheet
-import java.awt.{FontMetrics, Dimension, Font, Graphics2D, Color}
+import java.awt.{Rectangle, FontMetrics, Dimension, Font, Graphics2D, Color}
 import java.io.File
 import scala.swing.event.ButtonClicked
 import scala.swing.Dialog.Result
@@ -32,7 +32,11 @@ class AtlasFrame extends MainFrame {
   preferredSize = new Dimension(800, 600)
   visible = true
 
-  private val glyphSheet: GlyphSheet = new GlyphSheet()
+  private val spriteSize: Int = 64
+  private val numSpritesAlongEdge: Int = 16
+  private val numSprites: Int = 256
+
+  var glyphSheet: GlyphSheet = null
 
   private var drawGridLines: Boolean = false
 
@@ -79,14 +83,15 @@ class AtlasFrame extends MainFrame {
     override def paint(g: Graphics2D) {
       g.setColor(Color.white)
 
+      if (glyphSheet == null) {
+        drawStringJava(g, "Create a new glyph atlas via File menu -> New...", Color.white, 14, 64, 64)
+        return
+      }
+
       if (drawGridLines) {
-        for (i: Int <- 0 to glyphSheet.NUM_SPRITES_ALONG_EDGE * glyphSheet.NUM_SPRITES_ALONG_EDGE) {
-          val col: Int = i % glyphSheet.NUM_SPRITES_ALONG_EDGE
-          val row: Int = i / glyphSheet.NUM_SPRITES_ALONG_EDGE
-          g.drawRect(col * glyphSheet.spriteSize,
-            (glyphSheet.NUM_SPRITES_ALONG_EDGE - 1 - row) * glyphSheet.spriteSize,
-            glyphSheet.spriteSize,
-            glyphSheet.spriteSize)
+        for (i: Int <- 0 until numSprites) {
+          val rect: Rectangle = glyphSheet.getRect(i)
+          g.drawRect(rect.x, rect.y, rect.width, rect.height)
         }
       }
       g.drawImage(glyphSheet.getImage, 0, 0, null)
@@ -169,7 +174,7 @@ class AtlasFrame extends MainFrame {
   private def drawString(g: Graphics2D, text: String, color: Color, ptSize: Int, x: Int, y: Int) {
     val scaleFactor: Double = ptSize.toDouble / glyphSheet.getPtSize
 
-    val destDimen: Int = math.round(scaleFactor * glyphSheet.spriteSize).toInt
+    val destDimen: Int = math.round(scaleFactor * spriteSize).toInt
     val destAscent: Int = math.round(scaleFactor * glyphSheet.getFontMetrics.getAscent).toInt
 
     var unscaledAnchorX: Int = 0  // will advance each iteration
@@ -179,15 +184,14 @@ class AtlasFrame extends MainFrame {
       val ch: Char = text.charAt(charPos)
       val unscaledCharWidth: Int = glyphSheet.getGlyphWidth(ch.toInt)
 
-      val col: Int = ch % glyphSheet.NUM_SPRITES_ALONG_EDGE
-      val row: Int = ch / glyphSheet.NUM_SPRITES_ALONG_EDGE
+      val row: Int = ch / numSpritesAlongEdge
 
-      // copy template from sprite sheet
-      val xSrc: Int = col * glyphSheet.spriteSize
+      val srcRect: Rectangle = glyphSheet.getRect(ch.toInt)
+
       // this craziness because 0 is bottom of image in OpenGL
-      val ySrc: Int = (glyphSheet.NUM_SPRITES_ALONG_EDGE - 1 - row) * glyphSheet.spriteSize
+      val ySrc: Int = (numSpritesAlongEdge - 1 - row) * spriteSize
 
-      val shim: Double = (glyphSheet.spriteSize - unscaledCharWidth) / 2.0
+      val shim: Double = (spriteSize - unscaledCharWidth) / 2.0
 
       val xDest: Int = x + math.round(scaleFactor * (unscaledAnchorX - shim)).toInt
 
@@ -197,10 +201,10 @@ class AtlasFrame extends MainFrame {
                   xDest + destDimen,
                   yDest + destDimen,
 
-                  xSrc,
+                  srcRect.x,
                   ySrc,
-                  xSrc + glyphSheet.spriteSize,
-                  ySrc + glyphSheet.spriteSize,
+                  srcRect.x + srcRect.width,
+                  ySrc + srcRect.height,
                   null)
 
       unscaledAnchorX += unscaledCharWidth  // horizontal advance includes spacing

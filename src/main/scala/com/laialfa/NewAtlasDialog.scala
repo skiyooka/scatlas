@@ -18,7 +18,8 @@
  */
 package com.laialfa
 
-import scala.swing.{FlowPanel, CheckBox, TextField, ComboBox, GridPanel, Window, Dialog, Action, Button, Label, BorderPanel}
+import com.laialfa.glyph.GlyphSheet
+import scala.swing.{FlowPanel, CheckBox, TextField, ComboBox, GridPanel, Dialog, Action, Button, Label, BorderPanel}
 import scala.swing.event.ButtonClicked
 import java.awt.GraphicsEnvironment
 
@@ -27,7 +28,7 @@ import java.awt.GraphicsEnvironment
  * Create a new atlas from a chosen font.  The user may also select
  * between normal antialiased transparency or a signed distance field.
  */
-class NewAtlasDialog(owner: Window) extends Dialog(owner) {
+class NewAtlasDialog(owner: AtlasFrame) extends Dialog(owner) {
 
   title = "New..."
   modal = true
@@ -41,16 +42,18 @@ class NewAtlasDialog(owner: Window) extends Dialog(owner) {
 
   private val distanceFieldCheckBox: CheckBox = new CheckBox("Signed Distance Field")
 
-  private val upscaleLabel: Label = new Label("Upscale:") { enabled = false }
+  private val upscaleLabel: Label = new Label("Upscale (2=fast, 8=quality):") { enabled = false }
   private val upscaleTextField: TextField = new TextField {
     enabled = false
     columns = 12
+    text = "2"
   }
 
-  private val spreadLabel: Label = new Label("Spread:") { enabled = false }
+  private val spreadLabel: Label = new Label("Spread (pixels):") { enabled = false }
   private val spreadTextField: TextField = new TextField {
     enabled = false
     columns = 12
+    text = "4"
   }
 
   private val gridPanel: GridPanel = new GridPanel(4, 2) {
@@ -83,11 +86,24 @@ class NewAtlasDialog(owner: Window) extends Dialog(owner) {
     layout(
       new FlowPanel {
         contents += new Button(Action("Okay") {
-          println("Okay clicked yay!")
-          println("Font chosen is: " + fontComboBox.selection.item)
+          val typeface: String = fontComboBox.selection.item
+
+          println("Font chosen is: " + typeface)
           println("Distance field: " + distanceFieldCheckBox.selected)
           println("Upscale: " + upscaleTextField.text)
           println("Spread: " + spreadTextField.text)
+
+          if (distanceFieldCheckBox.selected) {
+            val upscale: Int = upscaleTextField.text.toInt
+            val spread: Int = spreadTextField.text.toInt
+
+            owner.glyphSheet = GlyphSheet.generate(typeface, 64, upscale, spread)
+          } else {
+            owner.glyphSheet = GlyphSheet.generate(typeface, 64, antialias=true)
+          }
+
+          owner.repaint()
+
           dispose()
         })
         contents += new Button(Action("Cancel") {
