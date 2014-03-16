@@ -20,7 +20,8 @@ package com.laialfa
 
 import com.laialfa.glyph.GlyphSheet
 import java.awt.{Rectangle, FontMetrics, Dimension, Font, Graphics2D, Color}
-import java.io.File
+import java.io.{IOException, File}
+import javax.imageio.ImageIO
 import scala.swing.event.ButtonClicked
 import scala.swing.Dialog.Result
 import scala.swing.{Panel, CheckMenuItem, Separator, FileChooser, MenuItem, Menu, MenuBar, MainFrame, Dialog, Action}
@@ -141,11 +142,34 @@ class AtlasFrame extends MainFrame {
    * @param file    to image file
    */
   private def save(file: File) {
-    println("TODO: save " + file)
+    if (glyphSheet == null) {
+      Dialog.showMessage(contents.head, "Error: no glyph atlas to save\nCreate a new one first.")
+      return
+    }
+
+    if (!file.getName.toLowerCase.endsWith(".png")) {
+      Dialog.showMessage(contents.head, "Error: filename must end with .png\nChoose a different name.")
+      return
+    }
+
+    try {
+      ImageIO.write(glyphSheet.getImage, "png", file)
+    } catch {
+      case e: IOException => println("Error: " + e.getMessage)
+    }
+
+    println("TODO: save font metrics in .fnt file too")
+
+    title = file.getName
     optCurrentFile = Some(file)
   }
 
   private def saveAs() {
+    if (glyphSheet == null) {
+      Dialog.showMessage(contents.head, "Error: no glyph atlas to save\nCreate a new one first.")
+      return
+    }
+
     val fc: FileChooser = new FileChooser { title = SAVE_AS }
     if (fc.showSaveDialog(contents.head) == FileChooser.Result.Approve) {
       val file: File = fc.selectedFile
