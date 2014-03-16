@@ -23,13 +23,13 @@ import java.awt.{FontMetrics, Dimension, Font, Graphics2D, Color}
 import java.io.File
 import scala.swing.event.ButtonClicked
 import scala.swing.Dialog.Result
-import scala.swing.{Dialog, Panel, CheckMenuItem, Separator, FileChooser, Action, MenuItem, Menu, MenuBar, MainFrame}
+import scala.swing.{Panel, CheckMenuItem, Separator, FileChooser, MenuItem, Menu, MenuBar, MainFrame, Dialog, Action}
 
 
 class AtlasFrame extends MainFrame {
 
   background = Color.black
-  preferredSize = new Dimension(800, 800)
+  preferredSize = new Dimension(800, 600)
   visible = true
 
   private val glyphSheet: GlyphSheet = new GlyphSheet()
@@ -42,7 +42,9 @@ class AtlasFrame extends MainFrame {
 
   menuBar = new MenuBar {
     contents += new Menu("File") {
-      contents += new MenuItem("New...")
+      contents += new MenuItem(Action("New...") {
+        new NewAtlasDialog(AtlasFrame.this) }
+      )
       contents += new MenuItem(Action("Open...") {
         val fc: FileChooser = new FileChooser
         if (fc.showOpenDialog(AtlasFrame.this.contents.head) == FileChooser.Result.Approve) {
@@ -56,7 +58,9 @@ class AtlasFrame extends MainFrame {
           case None => saveAs()
         }
       })
-      contents += new MenuItem(Action(SAVE_AS) { saveAs() })
+      contents += new MenuItem(Action(SAVE_AS) {
+        saveAs()
+      })
     }
     contents += new Menu("View") {
       contents += new MenuItem("Glyph Preview...")
