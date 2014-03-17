@@ -34,9 +34,7 @@ class AtlasFrame extends MainFrame {
   preferredSize = new Dimension(800, 600)
   visible = true
 
-  private val spriteSize: Int = 64
-  private val numSpritesAlongEdge: Int = 16
-  private val numSprites: Int = 256
+  val SPRITE_SIZE: Int = 64  // pixels
 
   private var optGlyphSheet: Option[GlyphSheet] = None
 
@@ -97,7 +95,7 @@ class AtlasFrame extends MainFrame {
       val glyphSheet: GlyphSheet = optGlyphSheet.get
 
       if (drawGridLines) {
-        for (i: Int <- 0 until numSprites) {
+        for (i: Int <- 0 until glyphSheet.getNumGlyphs) {
           val rect: Rectangle = glyphSheet.getRect(i)
           g.drawRect(rect.x, rect.y, rect.width, rect.height)
         }
@@ -212,7 +210,7 @@ class AtlasFrame extends MainFrame {
 
     val scaleFactor: Double = ptSize.toDouble / glyphSheet.getPtSize
 
-    val destDimen: Int = math.round(scaleFactor * spriteSize).toInt
+    val destDimen: Int = math.round(scaleFactor * SPRITE_SIZE).toInt
     val destAscent: Int = math.round(scaleFactor * glyphSheet.getFontMetrics.getAscent).toInt
 
     var unscaledAnchorX: Int = 0  // will advance each iteration
@@ -222,14 +220,12 @@ class AtlasFrame extends MainFrame {
       val ch: Char = text.charAt(charPos)
       val unscaledCharWidth: Int = glyphSheet.getGlyphWidth(ch.toInt)
 
-      val row: Int = ch / numSpritesAlongEdge
-
       val srcRect: Rectangle = glyphSheet.getRect(ch.toInt)
 
       // this craziness because 0 is bottom of image in OpenGL
-      val ySrc: Int = (numSpritesAlongEdge - 1 - row) * spriteSize
+      val ySrc: Int = glyphSheet.getHeight - srcRect.y - SPRITE_SIZE
 
-      val shim: Double = (spriteSize - unscaledCharWidth) / 2.0
+      val shim: Double = (SPRITE_SIZE - unscaledCharWidth) / 2.0
 
       val xDest: Int = x + math.round(scaleFactor * (unscaledAnchorX - shim)).toInt
 

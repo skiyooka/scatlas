@@ -447,6 +447,9 @@ class GlyphSheet(ptSize: Int,
   def getFontMetrics: FontMetrics = fontMetrics
 
   /** @return width in pixels of given glyph index */
+  def getNumGlyphs: Int = pixelPositions.length
+
+  /** @return width in pixels of given glyph index */
   def getGlyphWidth(index: Int): Int = { glyphWidths(index) }
 
   /** @return width in pixels */

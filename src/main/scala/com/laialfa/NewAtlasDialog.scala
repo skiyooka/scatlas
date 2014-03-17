@@ -97,9 +97,9 @@ class NewAtlasDialog(owner: AtlasFrame) extends Dialog(owner) {
             val upscale: Int = upscaleTextField.text.toInt
             val spread: Int = spreadTextField.text.toInt
 
-            owner.setGlyphSheet(GlyphSheet.generate(typeface, 64, upscale, spread))
+            owner.setGlyphSheet(GlyphSheet.generate(typeface, owner.SPRITE_SIZE, upscale, spread))
           } else {
-            owner.setGlyphSheet(GlyphSheet.generate(typeface, 64, antialias=true))
+            owner.setGlyphSheet(GlyphSheet.generate(typeface, owner.SPRITE_SIZE, antialias=true))
           }
 
           owner.title = "Untitled"
