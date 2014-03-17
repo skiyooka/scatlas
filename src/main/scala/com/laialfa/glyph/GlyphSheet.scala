@@ -53,7 +53,7 @@ object GlyphSheet {
     val graphics: GraphicsConfiguration = GraphicsEnvironment.getLocalGraphicsEnvironment.
           getDefaultScreenDevice.getDefaultConfiguration
 
-    val ptSize: Int = getMaxPtSize(graphics, spriteSize)
+    val ptSize: Int = getMaxPtSize(graphics, typeface, spriteSize, 0)
 
     val numSpritesAlongEdge: Int = 16  // 256 total glyphs
 
@@ -121,7 +121,7 @@ object GlyphSheet {
     val graphics: GraphicsConfiguration = GraphicsEnvironment.getLocalGraphicsEnvironment.
         getDefaultScreenDevice.getDefaultConfiguration
 
-    val ptSize: Int = getMaxPtSize(graphics, spriteSize)
+    val ptSize: Int = getMaxPtSize(graphics, typeface, spriteSize, spread)
 
     val numSpritesAlongEdge: Int = 16  // 256 total glyphs
 
@@ -382,11 +382,16 @@ object GlyphSheet {
    * This is a pure function.
    *
    * @param graphics      graphics configuration
+   * @param typeface      font
    * @param spriteSize    sprite square edge length
+   * @param spread        > 0 for signed distance fields
    *
    * @return maximum pt size that will fit in a square image of given size
    */
-  private def getMaxPtSize(graphics: GraphicsConfiguration, spriteSize: Int): Int = {
+  private def getMaxPtSize(graphics: GraphicsConfiguration,
+                           typeface: String,
+                         spriteSize: Int,
+                             spread: Int): Int = {
     val image: BufferedImage = graphics.createCompatibleImage(spriteSize, spriteSize)
     val g2: Graphics2D = image.getGraphics.asInstanceOf[Graphics2D]
 
@@ -399,8 +404,8 @@ object GlyphSheet {
       if (largestPtSize == 0) {
         throw new RuntimeException("largestPtSize is 0")
       }
-      val fontMetrics = g2.getFontMetrics(new Font("SansSerif", Font.PLAIN, largestPtSize))
-      fits = fontMetrics.getHeight <= spriteSize
+      val fontMetrics = g2.getFontMetrics(new Font(typeface, Font.PLAIN, largestPtSize))
+      fits = fontMetrics.getHeight + spread <= spriteSize
     }
     g2.dispose()
 
