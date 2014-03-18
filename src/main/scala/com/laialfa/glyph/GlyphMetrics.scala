@@ -18,6 +18,7 @@
  */
 package com.laialfa.glyph
 
+import java.awt.Rectangle
 import scala.xml.{Node, Elem}
 
 
@@ -39,6 +40,21 @@ object GlyphMetrics {
         codePointNode.text.toInt
       }
 
+    // These rectangles are for use by OpenGL and thus the origin 0,0 is in
+    // the bottom left corner.  The rects are within this class instead of
+    // GlyphSheet in order to consolidate loading/saving to one class.
+    val boundingRects: Seq[Rectangle] =
+      for {
+        rectNode: Node <- (node \ "boundingRects" \ "rectGL")
+        if rectNode.label == "rectGL"
+      } yield {
+        val x: Int = (rectNode \ "@x").text.toInt
+        val y: Int = (rectNode \ "@y").text.toInt
+        val w: Int = (rectNode \ "@width").text.toInt
+        val h: Int = (rectNode \ "@height").text.toInt
+        new Rectangle(x, y, w, h)
+      }
+
     val advances: Seq[Int] =
       for {
         codePointNode: Node <- (node \ "codePoints" \ "codePoint")
@@ -47,7 +63,8 @@ object GlyphMetrics {
         (codePointNode \ "@advance").text.toInt
       }
 
-    GlyphMetrics(typeface, ptSize, height, ascent, descent, numGlyphs, codePoints.toArray, advances.toArray)
+    GlyphMetrics(typeface, ptSize, height, ascent, descent, numGlyphs,
+        codePoints.toArray, boundingRects.toArray, advances.toArray)
   }
 }
 
@@ -56,14 +73,15 @@ object GlyphMetrics {
  * Contains information about the font, Unicode code points, and their
  * respective advances used to generate the GlyphSheet.
  *
- * @param typeface      font name
- * @param ptSize        ptSize used when generating glyphSheet
- * @param height        font height
- * @param ascent        above the baseline
- * @param descent       below the baseline (might not include leading)
- * @param numGlyphs     number of characters in the GlyphSheet - usually 256
- * @param codePoints    Unicode code points
- * @param advances      character widths in pixels
+ * @param typeface         font name
+ * @param ptSize           ptSize used when generating glyphSheet
+ * @param height           font height
+ * @param ascent           above the baseline
+ * @param descent          below the baseline (might not include leading)
+ * @param numGlyphs        number of characters in the GlyphSheet - usually 256
+ * @param codePoints       Unicode code points
+ * @param boundingRects    location on GlyphSheet
+ * @param advances         character widths in pixels
  */
 case class GlyphMetrics(typeface: String,
                           ptSize: Int,
@@ -72,6 +90,7 @@ case class GlyphMetrics(typeface: String,
                          descent: Int,
                        numGlyphs: Int,
                       codePoints: Array[Int],
+                   boundingRects: Array[Rectangle],
                         advances: Array[Int]) {
 
   def toXML: Elem = {
@@ -87,13 +106,23 @@ case class GlyphMetrics(typeface: String,
           var i: Int = 0
           for (codePoint: Int <- codePoints) yield {
             // string attribute is more readable but it not used during load
-            val hexFormat: String = "U+%x4".format(codePoint)
+            val hexFormat: String = "U+%04x".format(codePoint)
             val advance: Int = advances(i)
             i += 1
             <codePoint hex={hexFormat} advance={advance.toString}>{codePoint}</codePoint>
           }
         }
       </codePoints>
+      <boundingRects>
+        {
+          for (rect: Rectangle <- boundingRects) yield {
+            <rectGL x={rect.x.toString}
+                    y={rect.y.toString}
+                    width={rect.width.toString}
+                    height={rect.height.toString}/>
+          }
+        }
+        </boundingRects>
     </glyphMetrics>
   }
 }

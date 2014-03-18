@@ -82,17 +82,17 @@ object GlyphSheet {
         col * spriteSize,
         (numSpritesAlongEdge - 1 - row) * spriteSize, null)
 
-      boundingRects(i) = new Rectangle(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
       codePoints(i) = i
+      boundingRects(i) = new Rectangle(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
       advances(i) = fontMetrics.charWidth(i)
     }
     g2.dispose()
 
     val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize,
       fontMetrics.getHeight, fontMetrics.getAscent, fontMetrics.getDescent,
-      numGlyphs, codePoints, advances)
+      numGlyphs, codePoints, boundingRects, advances)
 
-    GlyphSheet(metrics, boundingRects, spriteSheet)
+    GlyphSheet(metrics, spriteSheet)
   }
 
   /**
@@ -166,8 +166,8 @@ object GlyphSheet {
         col * spriteSize,
         (numSpritesAlongEdge - 1 - row) * spriteSize, null)
 
-      boundingRects(i) = new Rectangle(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
       codePoints(i) = i
+      boundingRects(i) = new Rectangle(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
       advances(i) = fontMetrics.charWidth(i)
     }
     println(" done!")
@@ -176,9 +176,9 @@ object GlyphSheet {
 
     val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize,
         fontMetrics.getHeight, fontMetrics.getAscent, fontMetrics.getDescent,
-        numGlyphs, codePoints, advances)
+        numGlyphs, codePoints, boundingRects, advances)
 
-    GlyphSheet(metrics, boundingRects, spriteSheet)
+    GlyphSheet(metrics, spriteSheet)
   }
 
   /**
@@ -452,13 +452,10 @@ object GlyphSheet {
  * Thus a simple approximation from the 36 pt font:
  * w0 = font metric ascent * 0.75 = 26.25 (close to 26.769)
  *
- * @param metrics          GlyphMetrics used during generation
- * @param boundingRects    of glyphs in pixels
- * @param image            actual atlas/sprite sheet
+ * @param metrics    GlyphMetrics used during generation
+ * @param image      actual atlas/sprite sheet
  */
-case class GlyphSheet(metrics: GlyphMetrics,
-                boundingRects: Array[Rectangle],
-                        image: BufferedImage) {
+case class GlyphSheet(metrics: GlyphMetrics, image: BufferedImage) {
 
   /** @return width in pixels */
   def width: Int = image.getWidth

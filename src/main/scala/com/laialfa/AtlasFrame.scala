@@ -20,12 +20,13 @@ package com.laialfa
 
 import com.laialfa.glyph.GlyphSheet
 import java.awt.{Rectangle, FontMetrics, Dimension, Font, Graphics2D, Color}
-import java.io.{IOException, File}
+import java.io.{FileWriter, IOException, File}
 import javax.imageio.ImageIO
 import javax.swing.filechooser.FileNameExtensionFilter
 import scala.swing.event.ButtonClicked
 import scala.swing.Dialog.Result
 import scala.swing.{Panel, CheckMenuItem, Separator, FileChooser, MenuItem, Menu, MenuBar, MainFrame, Dialog, Action}
+import scala.xml.PrettyPrinter
 
 
 class AtlasFrame extends MainFrame {
@@ -96,7 +97,7 @@ class AtlasFrame extends MainFrame {
 
       if (drawGridLines) {
         for (i: Int <- 0 until glyphSheet.metrics.numGlyphs) {
-          val rect: Rectangle = glyphSheet.boundingRects(i)
+          val rect: Rectangle = glyphSheet.metrics.boundingRects(i)
           g.drawRect(rect.x, rect.y, rect.width, rect.height)
         }
       }
@@ -172,11 +173,18 @@ class AtlasFrame extends MainFrame {
 
     try {
       ImageIO.write(glyphSheet.image, "png", file)
+
+      val len: Int = file.getCanonicalPath.length
+      val metricsFilepath: String = file.getCanonicalPath.substring(0, len-4) + "-metrics.xml"
+      val metricsFile: File = new File(metricsFilepath)
+
+      val fw = new FileWriter(metricsFile)
+      fw.write(new PrettyPrinter(80, 2).format(glyphSheet.metrics.toXML))
+      fw.write("\n")
+      fw.close()
     } catch {
       case e: IOException => println("Error: " + e.getMessage)
     }
-
-    println("TODO: save font metrics in .fnt file too")
 
     title = file.getName
     optCurrentFile = Some(file)
@@ -195,7 +203,20 @@ class AtlasFrame extends MainFrame {
     if (fc.showSaveDialog(contents.head) == FileChooser.Result.Approve) {
       val file: File = fc.selectedFile
       if (file.exists()) {
-        Dialog.showConfirmation(contents.head, "Overwrite " + file.getName + "?", SAVE_AS) match {
+        val prompt: StringBuilder = new StringBuilder
+        prompt.append("Overwrite ")
+        prompt.append(file.getName)
+
+        val len: Int = file.getCanonicalPath.length
+        val metricsFilepath: String = file.getCanonicalPath.substring(0, len-4) + "-metrics.xml"
+        val metricsFile: File = new File(metricsFilepath)
+        if (metricsFile.exists()) {
+          prompt.append(" and ")
+          prompt.append(metricsFile.getName)
+        }
+        prompt.append("?")
+
+        Dialog.showConfirmation(contents.head, prompt, SAVE_AS) match {
           case Result.Yes => save(file)
           case _ =>
         }
@@ -231,7 +252,7 @@ class AtlasFrame extends MainFrame {
       val ch: Char = text.charAt(charPos)
       val unscaledCharWidth: Int = glyphSheet.metrics.advances(ch.toInt)
 
-      val srcRect: Rectangle = glyphSheet.boundingRects(ch.toInt)
+      val srcRect: Rectangle = glyphSheet.metrics.boundingRects(ch.toInt)
 
       // this craziness because 0 is bottom of image in OpenGL
       val ySrc: Int = glyphSheet.height - srcRect.y - SPRITE_SIZE
