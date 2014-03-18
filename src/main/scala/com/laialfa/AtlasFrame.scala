@@ -95,14 +95,14 @@ class AtlasFrame extends MainFrame {
       val glyphSheet: GlyphSheet = optGlyphSheet.get
 
       if (drawGridLines) {
-        for (i: Int <- 0 until glyphSheet.getNumGlyphs) {
-          val rect: Rectangle = glyphSheet.getRect(i)
+        for (i: Int <- 0 until glyphSheet.metrics.numGlyphs) {
+          val rect: Rectangle = glyphSheet.boundingRects(i)
           g.drawRect(rect.x, rect.y, rect.width, rect.height)
         }
       }
-      g.drawImage(glyphSheet.getImage, 0, 0, null)
+      g.drawImage(glyphSheet.image, 0, 0, null)
 
-      var ptSize: Int = glyphSheet.getPtSize
+      var ptSize: Int = glyphSheet.metrics.ptSize
       var message: String = "The quick brown fox"
       drawString(g, message, Color.green, ptSize, 100, 64)
       drawStringJava(g, message, Color.green, ptSize, 100, 128)
@@ -110,21 +110,32 @@ class AtlasFrame extends MainFrame {
       drawStringJava(g, "width " +     stringWidth(g, message, ptSize), Color.green, 12, 800, 64)
       drawStringJava(g, "width " + stringWidthJava(g, message, ptSize), Color.green, 12, 800, 128)
 
-      ptSize = 12
-      message = "jumped over the lazy dogs!  The advance of a String is not necessarily the sum of the advances of its characters."
-      drawString(g, message, Color.green, ptSize, 100, 192)
-      drawStringJava(g, message, Color.green, ptSize, 100, 256)
+      var baseline: Int = 100
+      for (p <- 6 to 18) {
+        val scaledHeight: Int = (glyphSheet.metrics.height * (p / glyphSheet.metrics.height.toDouble)).toInt
 
-      drawStringJava(g, "width " +     stringWidth(g, message, ptSize), Color.green, 12, 800, 192)
-      drawStringJava(g, "width " + stringWidthJava(g, message, ptSize), Color.green, 12, 800, 256)
+        message = p.toString + " jumped over the lazy dogs!  The advance of a String is not necessarily the sum of the advances of its characters."
+        drawString(g, message, Color.green, p, 100, baseline)
+        drawStringJava(g, "width " +     stringWidth(g, message, p), Color.green, 12, 800, baseline)
+        baseline += scaledHeight
+
+        drawStringJava(g, message, Color.green, p, 100, baseline)
+        drawStringJava(g, "width " + stringWidthJava(g, message, p), Color.green, 12, 800, baseline)
+        baseline += scaledHeight
+      }
 
       ptSize = 108
       message = "Bigger bigger"
-      drawString(g, message, Color.green, ptSize, 100, 384)
-      drawStringJava(g, message, Color.green, ptSize, 100, 512)
 
-      drawStringJava(g, "width " +     stringWidth(g, message, ptSize), Color.green, 12, 800, 384)
-      drawStringJava(g, "width " + stringWidthJava(g, message, ptSize), Color.green, 12, 800, 512)
+      val scaledHeight: Int = (glyphSheet.metrics.height * (ptSize / glyphSheet.metrics.height.toDouble)).toInt
+      baseline += 50
+      drawString(g, message, Color.green, ptSize, 100, baseline)
+      drawStringJava(g, "width " +     stringWidth(g, message, ptSize), Color.green, 12, 800, baseline)
+      baseline += scaledHeight
+
+      drawStringJava(g, message, Color.green, ptSize, 100, baseline)
+      drawStringJava(g, "width " + stringWidthJava(g, message, ptSize), Color.green, 12, 800, baseline)
+      baseline += scaledHeight
     }
   }
 
@@ -160,7 +171,7 @@ class AtlasFrame extends MainFrame {
     val glyphSheet: GlyphSheet = optGlyphSheet.get
 
     try {
-      ImageIO.write(glyphSheet.getImage, "png", file)
+      ImageIO.write(glyphSheet.image, "png", file)
     } catch {
       case e: IOException => println("Error: " + e.getMessage)
     }
@@ -208,28 +219,28 @@ class AtlasFrame extends MainFrame {
   private def drawString(g: Graphics2D, text: String, color: Color, ptSize: Int, x: Int, y: Int) {
     val glyphSheet: GlyphSheet = optGlyphSheet.get
 
-    val scaleFactor: Double = ptSize.toDouble / glyphSheet.getPtSize
+    val scaleFactor: Double = ptSize.toDouble / glyphSheet.metrics.ptSize
 
     val destDimen: Int = math.round(scaleFactor * SPRITE_SIZE).toInt
-    val destAscent: Int = math.round(scaleFactor * glyphSheet.getFontMetrics.getAscent).toInt
+    val destAscent: Int = math.round(scaleFactor * glyphSheet.metrics.ascent).toInt
 
     var unscaledAnchorX: Int = 0  // will advance each iteration
     val yDest: Int = y - destAscent  // constant (will be -ve for OpenGL)
 
     for (charPos: Int <- 0 until text.length()) {
       val ch: Char = text.charAt(charPos)
-      val unscaledCharWidth: Int = glyphSheet.getGlyphWidth(ch.toInt)
+      val unscaledCharWidth: Int = glyphSheet.metrics.advances(ch.toInt)
 
-      val srcRect: Rectangle = glyphSheet.getRect(ch.toInt)
+      val srcRect: Rectangle = glyphSheet.boundingRects(ch.toInt)
 
       // this craziness because 0 is bottom of image in OpenGL
-      val ySrc: Int = glyphSheet.getHeight - srcRect.y - SPRITE_SIZE
+      val ySrc: Int = glyphSheet.height - srcRect.y - SPRITE_SIZE
 
       val shim: Double = (SPRITE_SIZE - unscaledCharWidth) / 2.0
 
       val xDest: Int = x + math.round(scaleFactor * (unscaledAnchorX - shim)).toInt
 
-      g.drawImage(glyphSheet.getImage,
+      g.drawImage(glyphSheet.image,
                   xDest,
                   yDest,
                   xDest + destDimen,
@@ -254,10 +265,10 @@ class AtlasFrame extends MainFrame {
     var sum: Int = 0
 
     for (charPos: Int <- 0 until text.length()) {
-      sum += glyphSheet.getGlyphWidth(text.charAt(charPos))
+      sum += glyphSheet.metrics.advances(text.charAt(charPos))
     }
 
-    math.round((ptSize.toDouble / glyphSheet.getPtSize) * sum).toInt
+    math.round((ptSize.toDouble / glyphSheet.metrics.ptSize) * sum).toInt
   }
 
   /**
@@ -265,7 +276,13 @@ class AtlasFrame extends MainFrame {
    */
   private def drawStringJava(g: Graphics2D, text: String, color: Color, ptSize: Int, x: Int, y: Int) {
     g.setColor(color)
-    g.setFont(new Font("SansSerif", Font.PLAIN, ptSize))
+    val typeface: String =
+      if (optGlyphSheet.isDefined) {
+        optGlyphSheet.get.metrics.typeface
+      } else {
+        "SansSerif"
+      }
+    g.setFont(new Font(typeface, Font.PLAIN, ptSize))
     g.drawString(text, x, y)
   }
 
@@ -273,7 +290,13 @@ class AtlasFrame extends MainFrame {
    * Graphics2D version for comparison purposes.
    */
   private def stringWidthJava(g: Graphics2D, text: String, ptSize: Int): Int = {
-    val fm: FontMetrics = g.getFontMetrics(new Font("SansSerif", Font.PLAIN, ptSize))
+    val typeface: String =
+      if (optGlyphSheet.isDefined) {
+        optGlyphSheet.get.metrics.typeface
+      } else {
+        "SansSerif"
+      }
+    val fm: FontMetrics = g.getFontMetrics(new Font(typeface, Font.PLAIN, ptSize))
     fm.stringWidth(text)
   }
 }

@@ -62,8 +62,9 @@ object GlyphSheet {
 
     // pre-calculate glyph widths in pixels
     val numGlyphs: Int = numSpritesAlongEdge * numSpritesAlongEdge
-    val glyphWidths: Array[Int] = Array.ofDim(numGlyphs)
-    val pixelPositions: Array[Rectangle] = Array.ofDim(numGlyphs)
+    val boundingRects: Array[Rectangle] = Array.ofDim(numGlyphs)
+    val codePoints: Array[Int] = Array.ofDim(numGlyphs)
+    val advances: Array[Int] = Array.ofDim(numGlyphs)
 
     val fontMetrics: FontMetrics = graphics.createCompatibleImage(1, 1).getGraphics
           .getFontMetrics(new Font(typeface, Font.PLAIN, ptSize))
@@ -81,12 +82,17 @@ object GlyphSheet {
         col * spriteSize,
         (numSpritesAlongEdge - 1 - row) * spriteSize, null)
 
-      glyphWidths(i) = fontMetrics.charWidth(i)
-      pixelPositions(i) = new Rectangle(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
+      boundingRects(i) = new Rectangle(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
+      codePoints(i) = i
+      advances(i) = fontMetrics.charWidth(i)
     }
     g2.dispose()
 
-    new GlyphSheet(ptSize, fontMetrics, glyphWidths, pixelPositions, spriteSheet)
+    val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize,
+      fontMetrics.getHeight, fontMetrics.getAscent, fontMetrics.getDescent,
+      numGlyphs, codePoints, advances)
+
+    GlyphSheet(metrics, boundingRects, spriteSheet)
   }
 
   /**
@@ -130,8 +136,9 @@ object GlyphSheet {
 
     // pre-calculate glyph widths in pixels
     val numGlyphs: Int = numSpritesAlongEdge * numSpritesAlongEdge
-    val glyphWidths: Array[Int] = Array.ofDim(numGlyphs)
-    val pixelPositions: Array[Rectangle] = Array.ofDim(numGlyphs)
+    val boundingRects: Array[Rectangle] = Array.ofDim(numGlyphs)
+    val codePoints: Array[Int] = Array.ofDim(numGlyphs)
+    val advances: Array[Int] = Array.ofDim(numGlyphs)
 
     val fontMetrics: FontMetrics = graphics.createCompatibleImage(1, 1).getGraphics
         .getFontMetrics(new Font(typeface, Font.PLAIN, ptSize))
@@ -159,13 +166,19 @@ object GlyphSheet {
         col * spriteSize,
         (numSpritesAlongEdge - 1 - row) * spriteSize, null)
 
-      glyphWidths(i) = fontMetrics.charWidth(i)
-      pixelPositions(i) = new Rectangle(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
+      boundingRects(i) = new Rectangle(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
+      codePoints(i) = i
+      advances(i) = fontMetrics.charWidth(i)
     }
     println(" done!")
     g2.dispose()
 
-    new GlyphSheet(ptSize, fontMetrics, glyphWidths, pixelPositions, spriteSheet)
+
+    val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize,
+        fontMetrics.getHeight, fontMetrics.getAscent, fontMetrics.getDescent,
+        numGlyphs, codePoints, advances)
+
+    GlyphSheet(metrics, boundingRects, spriteSheet)
   }
 
   /**
@@ -438,44 +451,18 @@ object GlyphSheet {
  *
  * Thus a simple approximation from the 36 pt font:
  * w0 = font metric ascent * 0.75 = 26.25 (close to 26.769)
+ *
+ * @param metrics          GlyphMetrics used during generation
+ * @param boundingRects    of glyphs in pixels
+ * @param image            actual atlas/sprite sheet
  */
-class GlyphSheet(ptSize: Int,
-            fontMetrics: FontMetrics,
-            glyphWidths: Array[Int],
-         pixelPositions: Array[Rectangle],
-                  image: BufferedImage) {
-
-  /** @return pt size used during tile generation */
-  def getPtSize: Int = ptSize
-
-  /** @return font metrics representing getPtSize() */
-  def getFontMetrics: FontMetrics = fontMetrics
-
-  /** @return width in pixels of given glyph index */
-  def getNumGlyphs: Int = pixelPositions.length
-
-  /** @return width in pixels of given glyph index */
-  def getGlyphWidth(index: Int): Int = { glyphWidths(index) }
+case class GlyphSheet(metrics: GlyphMetrics,
+                boundingRects: Array[Rectangle],
+                        image: BufferedImage) {
 
   /** @return width in pixels */
-  def getWidth: Int = image.getWidth
+  def width: Int = image.getWidth
 
   /** @return height in pixels */
-  def getHeight: Int = image.getHeight
-
-  /**
-   * OpenGL's texture extent ranges from 0.0 to 1.0.  One can calculate this
-   * knowing the position of the glyph on the sprite sheet plus the overall
-   * sprite sheet's dimensions.
-   *
-   * @param glyphIndex    of sprite (typically 0..255)
-   *
-   * @return rectangle containing glyph in pixels
-   */
-  def getRect(glyphIndex: Int): Rectangle = {
-    pixelPositions(glyphIndex)
-  }
-
-  /** @return the actual sprite sheet */
-  def getImage: BufferedImage = image
+  def height: Int = image.getHeight
 }
