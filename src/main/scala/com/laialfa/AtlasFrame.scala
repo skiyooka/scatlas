@@ -18,15 +18,16 @@
  */
 package com.laialfa
 
-import com.laialfa.glyph.GlyphSheet
+import com.laialfa.glyph.{GlyphMetrics, GlyphSheet}
 import java.awt.{Rectangle, FontMetrics, Dimension, Font, Graphics2D, Color}
+import java.awt.image.BufferedImage
 import java.io.{FileWriter, IOException, File}
 import javax.imageio.ImageIO
 import javax.swing.filechooser.FileNameExtensionFilter
 import scala.swing.event.ButtonClicked
 import scala.swing.Dialog.Result
 import scala.swing.{Panel, CheckMenuItem, Separator, FileChooser, MenuItem, Menu, MenuBar, MainFrame, Dialog, Action}
-import scala.xml.PrettyPrinter
+import scala.xml.{XML, PrettyPrinter}
 
 
 class AtlasFrame extends MainFrame {
@@ -46,6 +47,10 @@ class AtlasFrame extends MainFrame {
   private var drawGridLines: Boolean = false
 
   private var optCurrentFile: Option[File] = None
+
+  def clearCurrentFile() {
+    optCurrentFile = None
+  }
 
   private val SAVE_AS = "Save As..."
 
@@ -145,12 +150,37 @@ class AtlasFrame extends MainFrame {
   /////////////////////
 
   /**
+   * @param pngFile    .png file
+   *
+   * @return NAME-metrics.xml file
+   */
+  private def getMetricsFile(pngFile: File): File = {
+    require(pngFile.getName.toLowerCase.endsWith(".png"))
+
+    val len: Int = pngFile.getCanonicalPath.length
+    val metricsFilepath: String = pngFile.getCanonicalPath.substring(0, len-4) + "-metrics.xml"
+    new File(metricsFilepath)
+  }
+
+  /**
    * Load image and associated font attributes.
    *
    * @param file    to image file
    */
   private def load(file: File) {
-    println("TODO: load " + file)
+    val metricsFile: File = getMetricsFile(file)
+
+    try {
+      val image: BufferedImage = ImageIO.read(file)
+      val metrics: GlyphMetrics = GlyphMetrics.fromXML(XML.loadFile(metricsFile))
+
+      optCurrentFile = Some(file)
+      optGlyphSheet = Some(GlyphSheet(metrics, image))
+      title = file.getName
+      repaint()
+    } catch {
+      case e: IOException => println("Error: " + e.getMessage)
+    }
   }
 
   /**
@@ -174,20 +204,16 @@ class AtlasFrame extends MainFrame {
     try {
       ImageIO.write(glyphSheet.image, "png", file)
 
-      val len: Int = file.getCanonicalPath.length
-      val metricsFilepath: String = file.getCanonicalPath.substring(0, len-4) + "-metrics.xml"
-      val metricsFile: File = new File(metricsFilepath)
-
-      val fw = new FileWriter(metricsFile)
+      val fw = new FileWriter(getMetricsFile(file))
       fw.write(new PrettyPrinter(120, 2).format(glyphSheet.metrics.toXML))
       fw.write("\n")
       fw.close()
+
+      optCurrentFile = Some(file)
+      title = file.getName
     } catch {
       case e: IOException => println("Error: " + e.getMessage)
     }
-
-    title = file.getName
-    optCurrentFile = Some(file)
   }
 
   private def saveAs() {
@@ -207,9 +233,7 @@ class AtlasFrame extends MainFrame {
         prompt.append("Overwrite ")
         prompt.append(file.getName)
 
-        val len: Int = file.getCanonicalPath.length
-        val metricsFilepath: String = file.getCanonicalPath.substring(0, len-4) + "-metrics.xml"
-        val metricsFile: File = new File(metricsFilepath)
+        val metricsFile: File = getMetricsFile(file)
         if (metricsFile.exists()) {
           prompt.append(" and ")
           prompt.append(metricsFile.getName)

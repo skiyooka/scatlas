@@ -102,6 +102,7 @@ class NewAtlasDialog(owner: AtlasFrame) extends Dialog(owner) {
             owner.setGlyphSheet(GlyphSheet.generate(typeface, owner.SPRITE_SIZE, antialias=true))
           }
 
+          owner.clearCurrentFile()
           owner.title = "Untitled"
           owner.repaint()
 

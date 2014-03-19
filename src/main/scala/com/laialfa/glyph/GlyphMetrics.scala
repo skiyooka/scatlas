@@ -47,7 +47,7 @@ object GlyphMetrics {
     val boundingRects: Seq[Rectangle] =
       for {
         glyphNode: Node <- (node \ "glyphs" \ "glyph")
-        if glyphNode.label == "glyphs"
+        if glyphNode.label == "glyph"
       } yield {
         val x: Int = (glyphNode \ "@x").text.toInt
         val y: Int = (glyphNode \ "@y").text.toInt
