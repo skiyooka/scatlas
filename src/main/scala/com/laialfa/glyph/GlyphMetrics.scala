@@ -34,10 +34,11 @@ object GlyphMetrics {
 
     val codePoints: Seq[Int] =
       for {
-        codePointNode: Node <- (node \ "codePoints" \ "codePoint")
-        if codePointNode.label == "codePoint"
+        glyphNode: Node <- (node \ "glyphs" \ "glyph")
+        if glyphNode.label == "glyph"
       } yield {
-        codePointNode.text.toInt
+        val hexFormat: String = (glyphNode \ "@codePoint").text  // e.g. U+0020
+        Integer.parseInt(hexFormat.substring(2), 16)
       }
 
     // These rectangles are for use by OpenGL and thus the origin 0,0 is in
@@ -45,22 +46,22 @@ object GlyphMetrics {
     // GlyphSheet in order to consolidate loading/saving to one class.
     val boundingRects: Seq[Rectangle] =
       for {
-        rectNode: Node <- (node \ "boundingRects" \ "rectGL")
-        if rectNode.label == "rectGL"
+        glyphNode: Node <- (node \ "glyphs" \ "glyph")
+        if glyphNode.label == "glyphs"
       } yield {
-        val x: Int = (rectNode \ "@x").text.toInt
-        val y: Int = (rectNode \ "@y").text.toInt
-        val w: Int = (rectNode \ "@width").text.toInt
-        val h: Int = (rectNode \ "@height").text.toInt
+        val x: Int = (glyphNode \ "@x").text.toInt
+        val y: Int = (glyphNode \ "@y").text.toInt
+        val w: Int = (glyphNode \ "@width").text.toInt
+        val h: Int = (glyphNode \ "@height").text.toInt
         new Rectangle(x, y, w, h)
       }
 
     val advances: Seq[Int] =
       for {
-        codePointNode: Node <- (node \ "codePoints" \ "codePoint")
-        if codePointNode.label == "codePoint"
+        glyphNode: Node <- (node \ "glyphs" \ "glyph")
+        if glyphNode.label == "glyph"
       } yield {
-        (codePointNode \ "@advance").text.toInt
+        (glyphNode \ "@advance").text.toInt
       }
 
     GlyphMetrics(typeface, ptSize, height, ascent, descent, numGlyphs,
@@ -101,28 +102,22 @@ case class GlyphMetrics(typeface: String,
       <ascent>{ascent}</ascent>
       <descent>{descent}</descent>
       <numGlyphs>{numGlyphs}</numGlyphs>
-      <codePoints>
+      <glyphs>
         {
-          var i: Int = 0
-          for (codePoint: Int <- codePoints) yield {
-            // string attribute is more readable but it not used during load
-            val hexFormat: String = "U+%04x".format(codePoint)
+          for (i: Int <- 0 until numGlyphs) yield {
+            val hexFormat: String = "U+%04x".format(codePoints(i))
             val advance: Int = advances(i)
-            i += 1
-            <codePoint hex={hexFormat} advance={advance.toString}>{codePoint}</codePoint>
+            val rect: Rectangle = boundingRects(i)
+            <glyph index={i.toString}
+               codePoint={hexFormat}
+                       x={rect.x.toString}
+                       y={rect.y.toString}
+                   width={rect.width.toString}
+                  height={rect.height.toString}
+                 advance={advance.toString}/>
           }
         }
-      </codePoints>
-      <boundingRects>
-        {
-          for (rect: Rectangle <- boundingRects) yield {
-            <rectGL x={rect.x.toString}
-                    y={rect.y.toString}
-                    width={rect.width.toString}
-                    height={rect.height.toString}/>
-          }
-        }
-        </boundingRects>
+      </glyphs>
     </glyphMetrics>
   }
 }

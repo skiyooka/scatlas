@@ -179,7 +179,7 @@ class AtlasFrame extends MainFrame {
       val metricsFile: File = new File(metricsFilepath)
 
       val fw = new FileWriter(metricsFile)
-      fw.write(new PrettyPrinter(80, 2).format(glyphSheet.metrics.toXML))
+      fw.write(new PrettyPrinter(120, 2).format(glyphSheet.metrics.toXML))
       fw.write("\n")
       fw.close()
     } catch {
