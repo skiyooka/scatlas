@@ -18,8 +18,9 @@
  */
 package com.laialfa
 
+import com.laialfa.geom.Rect2D
 import com.laialfa.glyph.{GlyphMetrics, GlyphSheet}
-import java.awt.{Rectangle, FontMetrics, Dimension, Font, Graphics2D, Color}
+import java.awt.{FontMetrics, Dimension, Font, Graphics2D, Color}
 import java.awt.image.BufferedImage
 import java.io.{FileWriter, IOException, File}
 import javax.imageio.ImageIO
@@ -102,7 +103,7 @@ class AtlasFrame extends MainFrame {
 
       if (drawGridLines) {
         for (i: Int <- 0 until glyphSheet.metrics.numGlyphs) {
-          val rect: Rectangle = glyphSheet.metrics.boundingRects(i)
+          val rect: Rect2D = glyphSheet.metrics.boundingRects(i)
           g.drawRect(rect.x, rect.y, rect.width, rect.height)
         }
       }
@@ -276,7 +277,7 @@ class AtlasFrame extends MainFrame {
       val ch: Char = text.charAt(charPos)
       val unscaledCharWidth: Int = glyphSheet.metrics.advances(ch.toInt)
 
-      val srcRect: Rectangle = glyphSheet.metrics.boundingRects(ch.toInt)
+      val srcRect: Rect2D = glyphSheet.metrics.boundingRects(ch.toInt)
 
       // this craziness because 0 is bottom of image in OpenGL
       val ySrc: Int = glyphSheet.height - srcRect.y - SPRITE_SIZE

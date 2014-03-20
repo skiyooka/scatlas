@@ -18,11 +18,11 @@
  */
 package com.laialfa.glyph
 
+import com.laialfa.geom.Rect2D
 import java.awt.image.BufferedImage
-import java.awt.{Rectangle, GraphicsConfiguration, FontMetrics, Color, RenderingHints}
+import java.awt.{GraphicsConfiguration, FontMetrics, Color, RenderingHints}
 import java.awt.{Transparency, Font, GraphicsEnvironment}
 import java.nio.ByteBuffer
-
 import scala.swing.Graphics2D
 
 
@@ -63,7 +63,7 @@ object GlyphSheet {
 
     // pre-calculate glyph widths in pixels
     val numGlyphs: Int = numSpritesAlongEdge * numSpritesAlongEdge
-    val boundingRects: Array[Rectangle] = Array.ofDim(numGlyphs)
+    val boundingRects: Array[Rect2D] = Array.ofDim(numGlyphs)
     val codePoints: Array[Int] = Array.ofDim(numGlyphs)
     val advances: Array[Int] = Array.ofDim(numGlyphs)
 
@@ -84,7 +84,7 @@ object GlyphSheet {
         (numSpritesAlongEdge - 1 - row) * spriteSize, null)
 
       codePoints(i) = i
-      boundingRects(i) = new Rectangle(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
+      boundingRects(i) = Rect2D(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
       advances(i) = fontMetrics.charWidth(i)
     }
     g2.dispose()
@@ -137,7 +137,7 @@ object GlyphSheet {
 
     // pre-calculate glyph widths in pixels
     val numGlyphs: Int = numSpritesAlongEdge * numSpritesAlongEdge
-    val boundingRects: Array[Rectangle] = Array.ofDim(numGlyphs)
+    val boundingRects: Array[Rect2D] = Array.ofDim(numGlyphs)
     val codePoints: Array[Int] = Array.ofDim(numGlyphs)
     val advances: Array[Int] = Array.ofDim(numGlyphs)
 
@@ -168,7 +168,7 @@ object GlyphSheet {
         (numSpritesAlongEdge - 1 - row) * spriteSize, null)
 
       codePoints(i) = i
-      boundingRects(i) = new Rectangle(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
+      boundingRects(i) = Rect2D(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
       advances(i) = fontMetrics.charWidth(i)
     }
     println(" done!")

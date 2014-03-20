@@ -18,7 +18,7 @@
  */
 package com.laialfa.glyph
 
-import java.awt.Rectangle
+import com.laialfa.geom.Rect2D
 import scala.xml.{Node, Elem}
 
 
@@ -45,16 +45,16 @@ object GlyphMetrics {
     // These rectangles are for use by OpenGL and thus the origin 0,0 is in
     // the bottom left corner.  The rects are within this class instead of
     // GlyphSheet in order to consolidate loading/saving to one class.
-    val boundingRects: Seq[Rectangle] =
+    val boundingRects: Seq[Rect2D] =
       for {
         glyphNode: Node <- (node \ "glyphs" \ "glyph")
         if glyphNode.label == "glyph"
       } yield {
         val x: Int = (glyphNode \ "@x").text.toInt
         val y: Int = (glyphNode \ "@y").text.toInt
-        val w: Int = (glyphNode \ "@width").text.toInt
-        val h: Int = (glyphNode \ "@height").text.toInt
-        new Rectangle(x, y, w, h)
+        val width: Int = (glyphNode \ "@width").text.toInt
+        val height: Int = (glyphNode \ "@height").text.toInt
+        Rect2D(x, y, width, height)
       }
 
     val advances: Seq[Int] =
@@ -94,7 +94,7 @@ case class GlyphMetrics(typeface: String,
                          descent: Int,
                        numGlyphs: Int,
                       codePoints: Array[Int],
-                   boundingRects: Array[Rectangle],
+                   boundingRects: Array[Rect2D],
                         advances: Array[Int]) {
 
   def toXML: Elem = {
@@ -111,7 +111,7 @@ case class GlyphMetrics(typeface: String,
           for (i: Int <- 0 until numGlyphs) yield {
             val hexFormat: String = "U+%04x".format(codePoints(i))
             val advance: Int = advances(i)
-            val rect: Rectangle = boundingRects(i)
+            val rect: Rect2D = boundingRects(i)
             <glyph index={i.toString}
                codePoint={hexFormat}
                        x={rect.x.toString}
