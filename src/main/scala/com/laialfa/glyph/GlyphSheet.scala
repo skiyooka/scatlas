@@ -19,7 +19,8 @@
 package com.laialfa.glyph
 
 import java.awt.image.BufferedImage
-import java.awt.{Rectangle, GraphicsConfiguration, FontMetrics, Color, RenderingHints, Transparency, Font, GraphicsEnvironment}
+import java.awt.{Rectangle, GraphicsConfiguration, FontMetrics, Color, RenderingHints}
+import java.awt.{Transparency, Font, GraphicsEnvironment}
 import java.nio.ByteBuffer
 
 import scala.swing.Graphics2D
@@ -88,7 +89,7 @@ object GlyphSheet {
     }
     g2.dispose()
 
-    val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize,
+    val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize, spriteSize,
       fontMetrics.getHeight, fontMetrics.getAscent, fontMetrics.getDescent,
       numGlyphs, codePoints, boundingRects, advances)
 
@@ -174,7 +175,7 @@ object GlyphSheet {
     g2.dispose()
 
 
-    val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize,
+    val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize, spriteSize,
         fontMetrics.getHeight, fontMetrics.getAscent, fontMetrics.getDescent,
         numGlyphs, codePoints, boundingRects, advances)
 
@@ -190,7 +191,7 @@ object GlyphSheet {
    * @param bi    input BufferedImage
    */
   def createByteBuffer(bi: BufferedImage): ByteBuffer = {
-    val pixels: ByteBuffer = ByteBuffer.allocate(bi.getWidth * bi.getHeight * 4)
+    val pixels: ByteBuffer = ByteBuffer.allocateDirect(bi.getWidth * bi.getHeight * 4)
 
     // OpenGL pixel buffers start on the bottom row and work upwards i.e. the
     // origin is in the bottom left corner.

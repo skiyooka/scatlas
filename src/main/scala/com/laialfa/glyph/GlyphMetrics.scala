@@ -27,6 +27,7 @@ object GlyphMetrics {
   def fromXML(node: Node): GlyphMetrics = {
     val typeface: String = (node \ "typeface").text
     val ptSize: Int = (node \ "ptSize").text.toInt
+    val spriteSize: Int = (node \ "spriteSize").text.toInt
     val height: Int = (node \ "height").text.toInt
     val ascent: Int = (node \ "ascent").text.toInt
     val descent: Int = (node \ "descent").text.toInt
@@ -64,8 +65,8 @@ object GlyphMetrics {
         (glyphNode \ "@advance").text.toInt
       }
 
-    GlyphMetrics(typeface, ptSize, height, ascent, descent, numGlyphs,
-        codePoints.toArray, boundingRects.toArray, advances.toArray)
+    GlyphMetrics(typeface, ptSize, spriteSize, height, ascent, descent,
+      numGlyphs, codePoints.toArray, boundingRects.toArray, advances.toArray)
   }
 }
 
@@ -76,6 +77,7 @@ object GlyphMetrics {
  *
  * @param typeface         font name
  * @param ptSize           ptSize used when generating glyphSheet
+ * @param spriteSize       length of square edge (pixels)
  * @param height           font height
  * @param ascent           above the baseline
  * @param descent          below the baseline (might not include leading)
@@ -86,6 +88,7 @@ object GlyphMetrics {
  */
 case class GlyphMetrics(typeface: String,
                           ptSize: Int,
+                      spriteSize: Int,
                           height: Int,
                           ascent: Int,
                          descent: Int,
@@ -98,6 +101,7 @@ case class GlyphMetrics(typeface: String,
     <glyphMetrics>
       <typeface>{typeface}</typeface>
       <ptSize>{ptSize}</ptSize>
+      <spriteSize>{spriteSize}</spriteSize>
       <height>{height}</height>
       <ascent>{ascent}</ascent>
       <descent>{descent}</descent>
