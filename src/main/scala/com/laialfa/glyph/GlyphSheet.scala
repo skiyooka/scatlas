@@ -287,6 +287,8 @@ object GlyphSheet {
    */
   private def signedDistanceAsARGB(signedDistance: Double, spread: Int): Int = {
     val alpha: Double = 0.5 + 0.5 * (signedDistance / spread)
+    // For glyphs to be downsized not using SDF: 0.6 + (signedDistance / spread)
+
     val clampedAlpha: Double = math.min(1.0, math.max(0.0, alpha))
 
     val alphaByte: Int = (clampedAlpha * 0xff).toInt
