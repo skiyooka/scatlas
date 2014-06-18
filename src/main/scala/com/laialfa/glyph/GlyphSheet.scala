@@ -183,6 +183,95 @@ object GlyphSheet {
   }
 
   /**
+   * Generate heavily antialiased translucent glyphs from a signed distance
+   * field suitable for downscaling only.
+   *
+   * This is a pure function.
+   *
+   * Depending on the parameters, this method can take quite a bit of time:
+   *   upscale of 2 = tolerable speed, 8 = high quality but slow.
+   *
+   * Place all glyph textures onto a single sheet containing 16 x 16 = 256
+   * glyphs:
+   *
+   * 240 ...            255
+   *
+   * ...
+   *
+   *  16 17 18 19 20 ... 31
+   *   0  1  2  3  4 ... 15
+   *
+   * This is the ordering that OpenGL expects due to its coordinate system.
+   *
+   * @param typeface      font name
+   * @param spriteSize    of each glyph square (e.g. 64)
+   * @param upscale       scale factor of high-res upscale version (e.g. 8)
+   * @param spread        spread from edge (pixels e.g. 4)
+   */
+  def generateDownscale(typeface: String,
+                      spriteSize: Int,
+                         upscale: Int,
+                          spread: Int): GlyphSheet = {
+    require(spriteSize * upscale <= 8192)  // don't allow anything too ridiculous
+
+    val graphics: GraphicsConfiguration = GraphicsEnvironment.getLocalGraphicsEnvironment.
+        getDefaultScreenDevice.getDefaultConfiguration
+
+    val ptSize: Int = getMaxPtSize(graphics, typeface, spriteSize, spread)
+
+    val numSpritesAlongEdge: Int = 16  // 256 total glyphs
+
+    val length: Int = numSpritesAlongEdge * spriteSize
+    val spriteSheet: BufferedImage = graphics.createCompatibleImage(length, length, Transparency.TRANSLUCENT)
+
+    // pre-calculate glyph widths in pixels
+    val numGlyphs: Int = numSpritesAlongEdge * numSpritesAlongEdge
+    val boundingRects: Array[Rect2D] = Array.ofDim(numGlyphs)
+    val codePoints: Array[Int] = Array.ofDim(numGlyphs)
+    val advances: Array[Int] = Array.ofDim(numGlyphs)
+
+    val fontMetrics: FontMetrics = graphics.createCompatibleImage(1, 1).getGraphics
+        .getFontMetrics(new Font(typeface, Font.PLAIN, ptSize))
+
+    val g2: Graphics2D = spriteSheet.createGraphics()
+    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+
+    val upscalePtSize: Int = ptSize * upscale
+    val upscaleLength: Int = spriteSize * upscale
+
+    print("Generating " + numGlyphs + " glyphs...")
+    for (i: Int <- 0 until numGlyphs) {
+      print(" ")
+      print(i)
+      if (i % 32 == 0) {
+        println()
+      }
+      val col: Int = i % numSpritesAlongEdge
+      val row: Int = i / numSpritesAlongEdge
+      val ch: Char = i.toChar
+
+      val upscaleImage: BufferedImage = generateImage(graphics, typeface, ch.toString, upscalePtSize, upscaleLength, antialias=false)
+      val sprite: BufferedImage = generateDownscaleFromDistanceField(graphics, upscaleImage, upscale, spread, spriteSize)
+      g2.drawImage(sprite,
+        col * spriteSize,
+        (numSpritesAlongEdge - 1 - row) * spriteSize, null)
+
+      codePoints(i) = i
+      boundingRects(i) = Rect2D(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
+      advances(i) = fontMetrics.charWidth(i)
+    }
+    println(" done!")
+    g2.dispose()
+
+
+    val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize, spriteSize,
+      fontMetrics.getHeight, fontMetrics.getAscent, fontMetrics.getDescent,
+      numGlyphs, codePoints, boundingRects, advances)
+
+    GlyphSheet(metrics, spriteSheet)
+  }
+
+  /**
    * Create a byte buffer of TYPE_INT_ARGB that is suitable for glTexImage2D
    * or gluBuild2DMipmaps.
    *
@@ -287,7 +376,26 @@ object GlyphSheet {
    */
   private def signedDistanceAsARGB(signedDistance: Double, spread: Int): Int = {
     val alpha: Double = 0.5 + 0.5 * (signedDistance / spread)
-    // For glyphs to be downsized not using SDF: 0.6 + (signedDistance / spread)
+
+    val clampedAlpha: Double = math.min(1.0, math.max(0.0, alpha))
+
+    val alphaByte: Int = (clampedAlpha * 0xff).toInt
+
+    (alphaByte << 24) | 0xffffff  // alpha only as glyph is white
+  }
+
+  /**
+   * Convert signed distance to antialiased ARGB for downscaling only.
+   *
+   * This is a pure function.
+   *
+   * @param signedDistance    of a pixel from the glyph
+   * @param spread            typically 4
+   *
+   * @return ARGB value suitable for BufferedImage.setRGB
+   */
+  private def downscaleFromSignedDistanceAsARGB(signedDistance: Double, spread: Int): Int = {
+    val alpha: Double = 0.6 + (signedDistance / spread)
 
     val clampedAlpha: Double = math.min(1.0, math.max(0.0, alpha))
 
@@ -387,6 +495,52 @@ object GlyphSheet {
           Point((x * upscale) + (upscale / 2), (y * upscale) + (upscale / 2)),
           bitmap, upscale, spread)
         val argb: Int = signedDistanceAsARGB(signedDistance, spread)
+        output.setRGB(x, y, argb)
+      }
+    }
+
+    output
+  }
+
+  /**
+   * Generate antialiased translucent glyph from signed distance field for
+   * spriteSize from larger sample.
+   *
+   * This is a pure function.
+   *
+   * @param graphics      graphics configuration
+   * @param image         binary input image with black=transparent and
+   *                      white=opaque
+   * @param upscale       scale factor of high-res upscale version (e.g. 8)
+   * @param spread        spread from edge (pixels e.g. 4)
+   * @param spriteSize    resulting sprite size (pixels)
+   *
+   * @return distance field
+   */
+  private def generateDownscaleFromDistanceField(graphics: GraphicsConfiguration,
+                                                    image: BufferedImage,
+                                                  upscale: Int,
+                                                   spread: Int,
+                                               spriteSize: Int): BufferedImage = {
+    require(spriteSize * upscale == image.getWidth)
+    require(spriteSize * upscale == image.getHeight)
+
+    val output: BufferedImage = graphics.createCompatibleImage(spriteSize, spriteSize, Transparency.TRANSLUCENT)
+
+    // note coordinates y,x
+    val bitmap: Array[Array[Boolean]] = Array.ofDim(image.getHeight, image.getWidth)
+    for (y: Int <- 0 until image.getHeight) {
+      for (x: Int <- 0 until image.getWidth) {
+        bitmap(y)(x) = (image.getRGB(x, y) & 0x808080) != 0
+      }
+    }
+
+    for (y: Int <- 0 until spriteSize) {
+      for (x: Int <- 0 until spriteSize) {
+        val signedDistance: Double = findSignedDistance(
+          Point((x * upscale) + (upscale / 2), (y * upscale) + (upscale / 2)),
+          bitmap, upscale, spread)
+        val argb: Int = downscaleFromSignedDistanceAsARGB(signedDistance, spread)
         output.setRGB(x, y, argb)
       }
     }

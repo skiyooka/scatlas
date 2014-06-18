@@ -42,6 +42,10 @@ class NewAtlasDialog(owner: AtlasFrame) extends Dialog(owner) {
 
   private val distanceFieldCheckBox: CheckBox = new CheckBox("Signed Distance Field")
 
+  private val antialiasForDownscaleCheckBox: CheckBox = new CheckBox("Antialias SDF for Downscale only") {
+    enabled = false
+  }
+
   private val upscaleLabel: Label = new Label("Upscale (2=fast, 8=quality):") { enabled = false }
   private val upscaleTextField: TextField = new TextField {
     enabled = false
@@ -56,7 +60,7 @@ class NewAtlasDialog(owner: AtlasFrame) extends Dialog(owner) {
     text = "4"
   }
 
-  private val gridPanel: GridPanel = new GridPanel(4, 2) {
+  private val gridPanel: GridPanel = new GridPanel(5, 2) {
     contents += new Label("Font:")
     contents += fontComboBox
 
@@ -65,6 +69,7 @@ class NewAtlasDialog(owner: AtlasFrame) extends Dialog(owner) {
     reactions += {
       case bc: ButtonClicked => if (bc.source == distanceFieldCheckBox) {
         val isDistanceField: Boolean = distanceFieldCheckBox.selected
+        antialiasForDownscaleCheckBox.enabled = isDistanceField
         upscaleLabel.enabled = isDistanceField
         upscaleTextField.enabled = isDistanceField
         spreadLabel.enabled = isDistanceField
@@ -78,6 +83,9 @@ class NewAtlasDialog(owner: AtlasFrame) extends Dialog(owner) {
 
     contents += spreadLabel
     contents += spreadTextField
+
+    contents += antialiasForDownscaleCheckBox
+    contents += new Label()  // shim for empty 2nd column
   }
 
   contents = new BorderPanel {
@@ -97,7 +105,11 @@ class NewAtlasDialog(owner: AtlasFrame) extends Dialog(owner) {
             val upscale: Int = upscaleTextField.text.toInt
             val spread: Int = spreadTextField.text.toInt
 
-            owner.setGlyphSheet(GlyphSheet.generate(typeface, owner.SPRITE_SIZE, upscale, spread))
+            if (antialiasForDownscaleCheckBox.selected) {
+              owner.setGlyphSheet(GlyphSheet.generateDownscale(typeface, owner.SPRITE_SIZE, upscale, spread))
+            } else {
+              owner.setGlyphSheet(GlyphSheet.generate(typeface, owner.SPRITE_SIZE, upscale, spread))
+            }
           } else {
             owner.setGlyphSheet(GlyphSheet.generate(typeface, owner.SPRITE_SIZE, antialias=true))
           }
