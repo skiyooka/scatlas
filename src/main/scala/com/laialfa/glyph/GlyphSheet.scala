@@ -55,8 +55,9 @@ object GlyphSheet {
 
     val numSpritesAlongEdge: Int = 16  // 256 total glyphs
 
-    val length: Int = numSpritesAlongEdge * spriteSize
-    val spriteSheet: BufferedImage = graphics.createCompatibleImage(length, length, Transparency.TRANSLUCENT)
+    val sheetWidth: Int = numSpritesAlongEdge * spriteSize
+    val sheetHeight: Int = numSpritesAlongEdge * spriteSize
+    val spriteSheet: BufferedImage = graphics.createCompatibleImage(sheetWidth, sheetHeight, Transparency.TRANSLUCENT)
 
     // pre-calculate glyph widths in pixels
     val numGlyphs: Int = numSpritesAlongEdge * numSpritesAlongEdge
@@ -83,7 +84,7 @@ object GlyphSheet {
     }
     g2.dispose()
 
-    val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize, spriteSize,
+    val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize, sheetWidth, sheetHeight, spriteSize,
       fontMetrics.getHeight, fontMetrics.getAscent, fontMetrics.getDescent,
       numGlyphs, codePoints, boundingRects, advances)
 
@@ -124,8 +125,9 @@ object GlyphSheet {
 
     val numSpritesAlongEdge: Int = 16  // 256 total glyphs
 
-    val length: Int = numSpritesAlongEdge * spriteSize
-    val spriteSheet: BufferedImage = graphics.createCompatibleImage(length, length, Transparency.TRANSLUCENT)
+    val sheetWidth: Int = numSpritesAlongEdge * spriteSize
+    val sheetHeight: Int = numSpritesAlongEdge * spriteSize
+    val spriteSheet: BufferedImage = graphics.createCompatibleImage(sheetWidth, sheetHeight, Transparency.TRANSLUCENT)
 
     // pre-calculate glyph widths in pixels
     val numGlyphs: Int = numSpritesAlongEdge * numSpritesAlongEdge
@@ -164,7 +166,7 @@ object GlyphSheet {
     g2.dispose()
 
 
-    val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize, spriteSize,
+    val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize, sheetWidth, sheetHeight, spriteSize,
         fontMetrics.getHeight, fontMetrics.getAscent, fontMetrics.getDescent,
         numGlyphs, codePoints, boundingRects, advances)
 
@@ -208,8 +210,9 @@ object GlyphSheet {
 
     val numSpritesAlongEdge: Int = 16  // 256 total glyphs
 
-    val length: Int = numSpritesAlongEdge * spriteSize
-    val spriteSheet: BufferedImage = graphics.createCompatibleImage(length, length, Transparency.TRANSLUCENT)
+    val sheetWidth: Int = numSpritesAlongEdge * spriteSize
+    val sheetHeight: Int = numSpritesAlongEdge * spriteSize
+    val spriteSheet: BufferedImage = graphics.createCompatibleImage(sheetWidth, sheetHeight, Transparency.TRANSLUCENT)
 
     // pre-calculate glyph widths in pixels
     val numGlyphs: Int = numSpritesAlongEdge * numSpritesAlongEdge
@@ -249,7 +252,7 @@ object GlyphSheet {
     g2.dispose()
 
 
-    val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize, spriteSize,
+    val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize, sheetWidth, sheetHeight, spriteSize,
       fontMetrics.getHeight, fontMetrics.getAscent, fontMetrics.getDescent,
       numGlyphs, codePoints, boundingRects, advances)
 

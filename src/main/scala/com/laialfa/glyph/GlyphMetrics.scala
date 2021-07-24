@@ -27,6 +27,8 @@ object GlyphMetrics {
   def fromXML(node: Node): GlyphMetrics = {
     val typeface: String = (node \ "typeface").text
     val ptSize: Int = (node \ "ptSize").text.toInt
+    val sheetWidth: Int = (node \ "sheetWidth").text.toInt
+    val sheetHeight: Int = (node \ "sheetHeight").text.toInt
     val spriteSize: Int = (node \ "spriteSize").text.toInt
     val height: Int = (node \ "height").text.toInt
     val ascent: Int = (node \ "ascent").text.toInt
@@ -35,7 +37,7 @@ object GlyphMetrics {
 
     val codePoints: Seq[Int] =
       for {
-        glyphNode: Node <- (node \ "glyphs" \ "glyph")
+        glyphNode: Node <- node \ "glyphs" \ "glyph"
         if glyphNode.label == "glyph"
       } yield {
         val hexFormat: String = (glyphNode \ "@codePoint").text  // e.g. U+0020
@@ -46,7 +48,7 @@ object GlyphMetrics {
     // consolidate loading/saving to one class.
     val boundingRects: Seq[Rect2D] =
       for {
-        glyphNode: Node <- (node \ "glyphs" \ "glyph")
+        glyphNode: Node <- node \ "glyphs" \ "glyph"
         if glyphNode.label == "glyph"
       } yield {
         val x: Int = (glyphNode \ "@x").text.toInt
@@ -58,13 +60,14 @@ object GlyphMetrics {
 
     val advances: Seq[Int] =
       for {
-        glyphNode: Node <- (node \ "glyphs" \ "glyph")
+        glyphNode: Node <- node \ "glyphs" \ "glyph"
         if glyphNode.label == "glyph"
       } yield {
         (glyphNode \ "@advance").text.toInt
       }
 
-    GlyphMetrics(typeface, ptSize, spriteSize, height, ascent, descent,
+    GlyphMetrics(typeface, ptSize, sheetWidth, sheetHeight, spriteSize,
+      height, ascent, descent,
       numGlyphs, codePoints.toArray, boundingRects.toArray, advances.toArray)
   }
 }
@@ -76,6 +79,8 @@ object GlyphMetrics {
  *
  * @param typeface         font name
  * @param ptSize           ptSize used when generating glyphSheet
+ * @param sheetWidth       width of sprite sheet (pixels)
+ * @param sheetHeight      height of sprite sheet (pixels)
  * @param spriteSize       length of square edge (pixels)
  * @param height           font height
  * @param ascent           above the baseline
@@ -87,6 +92,8 @@ object GlyphMetrics {
  */
 case class GlyphMetrics(typeface: String,
                           ptSize: Int,
+                      sheetWidth: Int,
+                     sheetHeight: Int,
                       spriteSize: Int,
                           height: Int,
                           ascent: Int,
@@ -100,6 +107,8 @@ case class GlyphMetrics(typeface: String,
     <glyphMetrics>
       <typeface>{typeface}</typeface>
       <ptSize>{ptSize}</ptSize>
+      <sheetWidth>{sheetWidth}</sheetWidth>
+      <sheetHeight>{sheetHeight}</sheetHeight>
       <spriteSize>{spriteSize}</spriteSize>
       <height>{height}</height>
       <ascent>{ascent}</ascent>
