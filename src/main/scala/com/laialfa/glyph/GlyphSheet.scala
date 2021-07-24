@@ -1,5 +1,5 @@
 /**
- * Copyright 2014  Sumio Kiyooka
+ * Copyright 2021  Sumio Kiyooka
  *
  * This file is part of Laialfa.
  *
@@ -22,7 +22,6 @@ import com.laialfa.geom.Rect2D
 import java.awt.image.BufferedImage
 import java.awt.{GraphicsConfiguration, FontMetrics, Color, RenderingHints}
 import java.awt.{Transparency, Font, GraphicsEnvironment}
-import java.nio.ByteBuffer
 import scala.swing.Graphics2D
 
 
@@ -34,14 +33,12 @@ object GlyphSheet {
    * Place all glyph textures onto a single sheet containing 16 x 16 = 256
    * glyphs:
    *
-   * 240 ...            255
+   *     0  1  2  3  4 ... 15
+   *    16 17 18 19 20 ... 31
    *
-   * ...
+   *   ...
    *
-   *  16 17 18 19 20 ... 31
-   *   0  1  2  3  4 ... 15
-   *
-   * This is the ordering that OpenGL expects due to its coordinate system.
+   *   240 ...            255
    *
    * @param typeface      font name
    * @param spriteSize    of each glyph square (e.g. 64)
@@ -79,10 +76,7 @@ object GlyphSheet {
       val ch: Char = i.toChar
 
       val sprite: BufferedImage = generateImage(graphics, typeface, ch.toString, ptSize, spriteSize, antialias=true)
-      g2.drawImage(sprite,
-        col * spriteSize,
-        (numSpritesAlongEdge - 1 - row) * spriteSize, null)
-
+      g2.drawImage(sprite, col * spriteSize, row * spriteSize, null)
       codePoints(i) = i
       boundingRects(i) = Rect2D(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
       advances(i) = fontMetrics.charWidth(i)
@@ -105,14 +99,12 @@ object GlyphSheet {
    * Place all glyph textures onto a single sheet containing 16 x 16 = 256
    * glyphs:
    *
-   * 240 ...            255
+   *     0  1  2  3  4 ... 15
+   *    16 17 18 19 20 ... 31
    *
-   * ...
+   *   ...
    *
-   *  16 17 18 19 20 ... 31
-   *   0  1  2  3  4 ... 15
-   *
-   * This is the ordering that OpenGL expects due to its coordinate system.
+   *   240 ...            255
    *
    * @param typeface      font name
    * @param spriteSize    of each glyph square (e.g. 64)
@@ -163,10 +155,7 @@ object GlyphSheet {
 
       val upscaleImage: BufferedImage = generateImage(graphics, typeface, ch.toString, upscalePtSize, upscaleLength, antialias=false)
       val sprite: BufferedImage = generateDistanceField(graphics, upscaleImage, upscale, spread, spriteSize)
-      g2.drawImage(sprite,
-        col * spriteSize,
-        (numSpritesAlongEdge - 1 - row) * spriteSize, null)
-
+      g2.drawImage(sprite, col * spriteSize, row * spriteSize, null)
       codePoints(i) = i
       boundingRects(i) = Rect2D(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
       advances(i) = fontMetrics.charWidth(i)
@@ -194,14 +183,12 @@ object GlyphSheet {
    * Place all glyph textures onto a single sheet containing 16 x 16 = 256
    * glyphs:
    *
-   * 240 ...            255
+   *     0  1  2  3  4 ... 15
+   *    16 17 18 19 20 ... 31
    *
-   * ...
+   *   ...
    *
-   *  16 17 18 19 20 ... 31
-   *   0  1  2  3  4 ... 15
-   *
-   * This is the ordering that OpenGL expects due to its coordinate system.
+   *   240 ...            255
    *
    * @param typeface      font name
    * @param spriteSize    of each glyph square (e.g. 64)
@@ -252,9 +239,7 @@ object GlyphSheet {
 
       val upscaleImage: BufferedImage = generateImage(graphics, typeface, ch.toString, upscalePtSize, upscaleLength, antialias=false)
       val sprite: BufferedImage = generateDownscaleFromDistanceField(graphics, upscaleImage, upscale, spread, spriteSize)
-      g2.drawImage(sprite,
-        col * spriteSize,
-        (numSpritesAlongEdge - 1 - row) * spriteSize, null)
+      g2.drawImage(sprite, col * spriteSize, row * spriteSize, null)
 
       codePoints(i) = i
       boundingRects(i) = Rect2D(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
@@ -269,40 +254,6 @@ object GlyphSheet {
       numGlyphs, codePoints, boundingRects, advances)
 
     GlyphSheet(metrics, spriteSheet)
-  }
-
-  /**
-   * Create a byte buffer of TYPE_INT_ARGB that is suitable for glTexImage2D
-   * or gluBuild2DMipmaps.
-   *
-   * This is a pure function.
-   *
-   * @param bi    input BufferedImage
-   */
-  def createByteBuffer(bi: BufferedImage): ByteBuffer = {
-    val pixels: ByteBuffer = ByteBuffer.allocateDirect(bi.getWidth * bi.getHeight * 4)
-
-    // OpenGL pixel buffers start on the bottom row and work upwards i.e. the
-    // origin is in the bottom left corner.
-    for (y: Int <- 0 until bi.getHeight) {
-      for (x: Int <- 0 until bi.getWidth) {
-        val argb: Int = bi.getRGB(x, bi.getHeight - 1 - y)  // TYPE_INT_ARGB
-
-        val alpha: Byte = ((argb >> 24) & 0xff).toByte
-        val   red: Byte = ((argb >> 16) & 0xff).toByte
-        val green: Byte = ((argb >>  8) & 0xff).toByte
-        val  blue: Byte =         (argb & 0xff).toByte
-
-        // OpenGL texture takes RGBA
-        pixels.put(red)
-        pixels.put(green)
-        pixels.put(blue)
-        pixels.put(alpha)
-      }
-    }
-
-    pixels.rewind()
-    pixels
   }
 
   /////////////////////

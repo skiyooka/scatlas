@@ -1,5 +1,5 @@
 /**
- * Copyright 2014  Sumio Kiyooka
+ * Copyright 2021  Sumio Kiyooka
  *
  * This file is part of Laialfa.
  *
@@ -279,9 +279,6 @@ class AtlasFrame extends MainFrame {
 
       val srcRect: Rect2D = glyphSheet.metrics.boundingRects(ch.toInt)
 
-      // this craziness because 0 is bottom of image in OpenGL
-      val ySrc: Int = glyphSheet.height - srcRect.y - SPRITE_SIZE
-
       val shim: Double = (SPRITE_SIZE - unscaledCharWidth) / 2.0
 
       val xDest: Int = x + math.round(scaleFactor * (unscaledAnchorX - shim)).toInt
@@ -293,9 +290,9 @@ class AtlasFrame extends MainFrame {
                   yDest + destDimen,
 
                   srcRect.x,
-                  ySrc,
+                  srcRect.y,
                   srcRect.x + srcRect.width,
-                  ySrc + srcRect.height,
+                  srcRect.y + srcRect.height,
                   null)
 
       unscaledAnchorX += unscaledCharWidth  // horizontal advance includes spacing

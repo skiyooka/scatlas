@@ -1,5 +1,5 @@
 /**
- * Copyright 2014  Sumio Kiyooka
+ * Copyright 2021  Sumio Kiyooka
  *
  * This file is part of Laialfa.
  *
@@ -42,9 +42,8 @@ object GlyphMetrics {
         Integer.parseInt(hexFormat.substring(2), 16)
       }
 
-    // These rectangles are for use by OpenGL and thus the origin 0,0 is in
-    // the bottom left corner.  The rects are within this class instead of
-    // GlyphSheet in order to consolidate loading/saving to one class.
+    // The rects are within this class instead of GlyphSheet in order to
+    // consolidate loading/saving to one class.
     val boundingRects: Seq[Rect2D] =
       for {
         glyphNode: Node <- (node \ "glyphs" \ "glyph")
