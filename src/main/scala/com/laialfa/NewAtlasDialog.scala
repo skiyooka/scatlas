@@ -38,7 +38,7 @@ class NewAtlasDialog(owner: AtlasFrame) extends Dialog(owner) {
   private val availableFonts: List[String] = ge.getAvailableFontFamilyNames.toList
 
   private val fontComboBox: ComboBox[String] = new ComboBox[String](availableFonts)
-  fontComboBox.selection.item = "Verdana"  // if available
+  fontComboBox.selection.item = "Arial"  // if available
 
   private val distanceFieldCheckBox: CheckBox = new CheckBox("Signed Distance Field")
 
