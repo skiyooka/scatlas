@@ -20,7 +20,7 @@ package com.laialfa
 
 import com.laialfa.geom.Rect2D
 import com.laialfa.glyph.{GlyphMetrics, GlyphSheet}
-import java.awt.{FontMetrics, Dimension, Font, Graphics2D, Color}
+import java.awt.{FontMetrics, Dimension, Font, Graphics2D, Color, Stroke, BasicStroke}
 import java.awt.image.BufferedImage
 import java.io.{FileWriter, IOException, File}
 import javax.imageio.ImageIO
@@ -102,10 +102,15 @@ class AtlasFrame extends MainFrame {
       val glyphSheet: GlyphSheet = optGlyphSheet.get
 
       if (drawGridLines) {
+        val g2d: Graphics2D = g.create().asInstanceOf[Graphics2D]  // copy of the Graphics instance
+        val dashed: Stroke = new BasicStroke(0.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1.0f, Array(4.0f, 8.0f), 0)
+        g2d.setStroke(dashed);
+
         for (i: Int <- 0 until glyphSheet.metrics.numGlyphs) {
           val rect: Rect2D = glyphSheet.metrics.boundingRects(i)
-          g.drawRect(rect.x, rect.y, rect.width, rect.height)
+          g2d.drawRect(rect.x, rect.y, rect.width, rect.height)
         }
+        g2d.dispose()
       }
       g.drawImage(glyphSheet.image, 0, 0, null)
 
