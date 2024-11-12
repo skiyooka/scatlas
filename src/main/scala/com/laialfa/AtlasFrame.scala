@@ -28,7 +28,7 @@ import javax.swing.filechooser.FileNameExtensionFilter
 import scala.swing.event.ButtonClicked
 import scala.swing.Dialog.Result
 import scala.swing.{Panel, CheckMenuItem, Separator, FileChooser, MenuItem, Menu, MenuBar, MainFrame, Dialog, Action}
-import scala.xml.{XML, PrettyPrinter}
+import upickle.default._
 
 
 class AtlasFrame extends MainFrame {
@@ -41,7 +41,7 @@ class AtlasFrame extends MainFrame {
 
   private var optGlyphSheet: Option[GlyphSheet] = None
 
-  def setGlyphSheet(glyphSheet: GlyphSheet) {
+  def setGlyphSheet(glyphSheet: GlyphSheet): Unit = {
     optGlyphSheet = Some(glyphSheet)
   }
 
@@ -49,7 +49,7 @@ class AtlasFrame extends MainFrame {
 
   private var optCurrentFile: Option[File] = None
 
-  def clearCurrentFile() {
+  def clearCurrentFile(): Unit = {
     optCurrentFile = None
   }
 
@@ -91,7 +91,7 @@ class AtlasFrame extends MainFrame {
   }
 
   contents = new Panel {
-    override def paint(g: Graphics2D) {
+    override def paint(g: Graphics2D): Unit = {
       g.setColor(Color.white)
 
       if (optGlyphSheet.isEmpty) {
@@ -107,7 +107,7 @@ class AtlasFrame extends MainFrame {
         g2d.setStroke(dashed);
 
         for (i: Int <- 0 until glyphSheet.metrics.numGlyphs) {
-          val rect: Rect2D = glyphSheet.metrics.boundingRects(i)
+          val rect: Rect2D = glyphSheet.metrics.glyphs(i).rect
           g2d.drawRect(rect.x, rect.y, rect.width, rect.height)
         }
         g2d.dispose()
@@ -158,13 +158,13 @@ class AtlasFrame extends MainFrame {
   /**
    * @param pngFile    .png file
    *
-   * @return NAME-metrics.xml file
+   * @return NAME-metrics.json file
    */
   private def getMetricsFile(pngFile: File): File = {
     require(pngFile.getName.toLowerCase.endsWith(".png"))
 
     val len: Int = pngFile.getCanonicalPath.length
-    val metricsFilepath: String = pngFile.getCanonicalPath.substring(0, len-4) + "-metrics.xml"
+    val metricsFilepath: String = pngFile.getCanonicalPath.substring(0, len-4) + "-metrics.json"
     new File(metricsFilepath)
   }
 
@@ -173,12 +173,12 @@ class AtlasFrame extends MainFrame {
    *
    * @param file    to image file
    */
-  private def load(file: File) {
+  private def load(file: File): Unit = {
     val metricsFile: File = getMetricsFile(file)
 
     try {
       val image: BufferedImage = ImageIO.read(file)
-      val metrics: GlyphMetrics = GlyphMetrics.fromXML(XML.loadFile(metricsFile))
+      val metrics: GlyphMetrics = read(metricsFile)
 
       optCurrentFile = Some(file)
       optGlyphSheet = Some(GlyphSheet(metrics, image))
@@ -194,7 +194,7 @@ class AtlasFrame extends MainFrame {
    *
    * @param file    to image file
    */
-  private def save(file: File) {
+  private def save(file: File): Unit = {
     if (optGlyphSheet.isEmpty) {
       Dialog.showMessage(contents.head, "No glyph atlas to save.\nCreate or open one first.")
       return
@@ -211,7 +211,7 @@ class AtlasFrame extends MainFrame {
       ImageIO.write(glyphSheet.image, "png", file)
 
       val fw = new FileWriter(getMetricsFile(file))
-      fw.write(new PrettyPrinter(120, 2).format(glyphSheet.metrics.toXML))
+      fw.write(write(glyphSheet.metrics, indent = 2))
       fw.write("\n")
       fw.close()
 
@@ -222,7 +222,7 @@ class AtlasFrame extends MainFrame {
     }
   }
 
-  private def saveAs() {
+  private def saveAs(): Unit = {
     if (optGlyphSheet.isEmpty) {
       Dialog.showMessage(contents.head, "No glyph atlas to save.\nCreate or open one first.")
       return
@@ -267,7 +267,7 @@ class AtlasFrame extends MainFrame {
    * @param x         screen coordinate (left side baseline)
    * @param y         screen coordinate (baseline)
    */
-  private def drawString(g: Graphics2D, text: String, color: Color, ptSize: Int, x: Int, y: Int) {
+  private def drawString(g: Graphics2D, text: String, color: Color, ptSize: Int, x: Int, y: Int): Unit = {
     val glyphSheet: GlyphSheet = optGlyphSheet.get
 
     val scaleFactor: Double = ptSize.toDouble / glyphSheet.metrics.ptSize
@@ -280,9 +280,9 @@ class AtlasFrame extends MainFrame {
 
     for (charPos: Int <- 0 until text.length()) {
       val ch: Char = text.charAt(charPos)
-      val unscaledCharWidth: Int = glyphSheet.metrics.advances(ch.toInt)
+      val unscaledCharWidth: Int = glyphSheet.metrics.glyphs(ch.toInt).advance
 
-      val srcRect: Rect2D = glyphSheet.metrics.boundingRects(ch.toInt)
+      val srcRect: Rect2D = glyphSheet.metrics.glyphs(ch.toInt).rect
 
       val shim: Double = (SPRITE_SIZE - unscaledCharWidth) / 2.0
 
@@ -313,7 +313,7 @@ class AtlasFrame extends MainFrame {
     var sum: Int = 0
 
     for (charPos: Int <- 0 until text.length()) {
-      sum += glyphSheet.metrics.advances(text.charAt(charPos))
+      sum += glyphSheet.metrics.glyphs(text.charAt(charPos)).advance
     }
 
     math.round((ptSize.toDouble / glyphSheet.metrics.ptSize) * sum).toInt
@@ -322,7 +322,7 @@ class AtlasFrame extends MainFrame {
   /**
    * Font metrics version for comparison purposes.
    */
-  private def drawStringJava(g: Graphics2D, text: String, color: Color, ptSize: Int, x: Int, y: Int) {
+  private def drawStringJava(g: Graphics2D, text: String, color: Color, ptSize: Int, x: Int, y: Int): Unit = {
     g.setColor(color)
     val typeface: String =
       if (optGlyphSheet.isDefined) {

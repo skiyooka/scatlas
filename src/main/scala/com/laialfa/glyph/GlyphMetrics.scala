@@ -19,76 +19,37 @@
 package com.laialfa.glyph
 
 import com.laialfa.geom.Rect2D
-import scala.xml.{Node, Elem}
+import upickle.default._
 
 
-object GlyphMetrics {
-
-  def fromXML(node: Node): GlyphMetrics = {
-    val typeface: String = (node \ "typeface").text
-    val ptSize: Int = (node \ "ptSize").text.toInt
-    val sheetWidth: Int = (node \ "sheetWidth").text.toInt
-    val sheetHeight: Int = (node \ "sheetHeight").text.toInt
-    val spriteSize: Int = (node \ "spriteSize").text.toInt
-    val height: Int = (node \ "height").text.toInt
-    val ascent: Int = (node \ "ascent").text.toInt
-    val descent: Int = (node \ "descent").text.toInt
-    val numGlyphs: Int = (node \ "numGlyphs").text.toInt
-
-    val codePoints: Seq[Int] =
-      for {
-        glyphNode: Node <- node \ "glyphs" \ "glyph"
-        if glyphNode.label == "glyph"
-      } yield {
-        val hexFormat: String = (glyphNode \ "@codePoint").text  // e.g. U+0020
-        Integer.parseInt(hexFormat.substring(2), 16)
-      }
-
-    // The rects are within this class instead of GlyphSheet in order to
-    // consolidate loading/saving to one class.
-    val boundingRects: Seq[Rect2D] =
-      for {
-        glyphNode: Node <- node \ "glyphs" \ "glyph"
-        if glyphNode.label == "glyph"
-      } yield {
-        val x: Int = (glyphNode \ "@x").text.toInt
-        val y: Int = (glyphNode \ "@y").text.toInt
-        val width: Int = (glyphNode \ "@width").text.toInt
-        val height: Int = (glyphNode \ "@height").text.toInt
-        Rect2D(x, y, width, height)
-      }
-
-    val advances: Seq[Int] =
-      for {
-        glyphNode: Node <- node \ "glyphs" \ "glyph"
-        if glyphNode.label == "glyph"
-      } yield {
-        (glyphNode \ "@advance").text.toInt
-      }
-
-    GlyphMetrics(typeface, ptSize, sheetWidth, sheetHeight, spriteSize,
-      height, ascent, descent,
-      numGlyphs, codePoints.toArray, boundingRects.toArray, advances.toArray)
-  }
-}
+/**
+ * Contains information about a single glyph.
+ *
+ * @param index        0 based
+ * @param codePoint    Unicode code point
+ * @param rect         bounding rect location on GlyphSheet
+ * @param advance      character width in pixels
+ */
+case class GlyphInfo(index: Int,
+                 codePoint: Int,
+                      rect: Rect2D,
+                   advance: Int) derives ReadWriter;
 
 
 /**
  * Contains information about the font, Unicode code points, and their
  * respective advances used to generate the GlyphSheet.
  *
- * @param typeface         font name
- * @param ptSize           ptSize used when generating glyphSheet
- * @param sheetWidth       width of sprite sheet (pixels)
- * @param sheetHeight      height of sprite sheet (pixels)
- * @param spriteSize       length of square edge (pixels)
- * @param height           font height
- * @param ascent           above the baseline
- * @param descent          below the baseline (might not include leading)
- * @param numGlyphs        number of characters in the GlyphSheet - usually 256
- * @param codePoints       Unicode code points
- * @param boundingRects    location on GlyphSheet
- * @param advances         character widths in pixels
+ * @param typeface       font name
+ * @param ptSize         ptSize used when generating glyphSheet
+ * @param sheetWidth     width of sprite sheet (pixels)
+ * @param sheetHeight    height of sprite sheet (pixels)
+ * @param spriteSize     length of square edge (pixels)
+ * @param height         font height
+ * @param ascent         above the baseline
+ * @param descent        below the baseline (might not include leading)
+ * @param numGlyphs      number of characters in the GlyphSheet - usually 256
+ * @param glyphs         codePoint, bounding rect, and advance
  */
 case class GlyphMetrics(typeface: String,
                           ptSize: Int,
@@ -99,37 +60,4 @@ case class GlyphMetrics(typeface: String,
                           ascent: Int,
                          descent: Int,
                        numGlyphs: Int,
-                      codePoints: Array[Int],
-                   boundingRects: Array[Rect2D],
-                        advances: Array[Int]) {
-
-  def toXML: Elem = {
-    <glyphMetrics>
-      <typeface>{typeface}</typeface>
-      <ptSize>{ptSize}</ptSize>
-      <sheetWidth>{sheetWidth}</sheetWidth>
-      <sheetHeight>{sheetHeight}</sheetHeight>
-      <spriteSize>{spriteSize}</spriteSize>
-      <height>{height}</height>
-      <ascent>{ascent}</ascent>
-      <descent>{descent}</descent>
-      <numGlyphs>{numGlyphs}</numGlyphs>
-      <glyphs>
-        {
-          for (i: Int <- 0 until numGlyphs) yield {
-            val hexFormat: String = "U+%04x".format(codePoints(i))
-            val advance: Int = advances(i)
-            val rect: Rect2D = boundingRects(i)
-            <glyph index={i.toString}
-               codePoint={hexFormat}
-                       x={rect.x.toString}
-                       y={rect.y.toString}
-                   width={rect.width.toString}
-                  height={rect.height.toString}
-                 advance={advance.toString}/>
-          }
-        }
-      </glyphs>
-    </glyphMetrics>
-  }
-}
+                          glyphs: Array[GlyphInfo]) derives ReadWriter;

@@ -52,7 +52,7 @@ object GlyphSheet {
               antialias: Boolean): GlyphSheet = {
 
     val graphics: GraphicsConfiguration = GraphicsEnvironment.getLocalGraphicsEnvironment.
-          getDefaultScreenDevice.getDefaultConfiguration
+        getDefaultScreenDevice.getDefaultConfiguration
 
     val ptSize: Int = getMaxPtSize(graphics, typeface, spriteSize, 0)
 
@@ -64,12 +64,10 @@ object GlyphSheet {
 
     // pre-calculate glyph widths in pixels
     val numGlyphs: Int = numSpritesAlongEdge * numSpritesAlongEdge
-    val boundingRects: Array[Rect2D] = Array.ofDim(numGlyphs)
-    val codePoints: Array[Int] = Array.ofDim(numGlyphs)
-    val advances: Array[Int] = Array.ofDim(numGlyphs)
+    val glyphs: Array[GlyphInfo] = Array.ofDim(numGlyphs)
 
     val fontMetrics: FontMetrics = graphics.createCompatibleImage(1, 1).getGraphics
-          .getFontMetrics(new Font(typeface, Font.PLAIN, ptSize))
+        .getFontMetrics(new Font(typeface, Font.PLAIN, ptSize))
 
     val g2: Graphics2D = spriteSheet.createGraphics()
     g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
@@ -81,15 +79,17 @@ object GlyphSheet {
 
       val sprite: BufferedImage = generateImage(graphics, typeface, ch.toString, ptSize, spriteSize, antialias=true)
       g2.drawImage(sprite, col * spriteSize, row * spriteSize, null)
-      codePoints(i) = ch.toInt
-      boundingRects(i) = Rect2D(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
-      advances(i) = fontMetrics.charWidth(ch.toInt)
+
+      val codePoint = ch.toInt
+      val boundingRect = Rect2D(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
+      val advance = fontMetrics.charWidth(codePoint)
+      glyphs(i) = GlyphInfo(i, codePoint, boundingRect, advance)
     }
     g2.dispose()
 
     val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize, sheetWidth, sheetHeight, spriteSize,
       fontMetrics.getHeight, fontMetrics.getAscent, fontMetrics.getDescent,
-      numGlyphs, codePoints, boundingRects, advances)
+      numGlyphs, glyphs)
 
     GlyphSheet(metrics, spriteSheet)
   }
@@ -134,9 +134,7 @@ object GlyphSheet {
 
     // pre-calculate glyph widths in pixels
     val numGlyphs: Int = numSpritesAlongEdge * numSpritesAlongEdge
-    val boundingRects: Array[Rect2D] = Array.ofDim(numGlyphs)
-    val codePoints: Array[Int] = Array.ofDim(numGlyphs)
-    val advances: Array[Int] = Array.ofDim(numGlyphs)
+    val glyphs: Array[GlyphInfo] = Array.ofDim(numGlyphs)
 
     val fontMetrics: FontMetrics = graphics.createCompatibleImage(1, 1).getGraphics
         .getFontMetrics(new Font(typeface, Font.PLAIN, ptSize))
@@ -158,9 +156,11 @@ object GlyphSheet {
       val upscaleImage: BufferedImage = generateImage(graphics, typeface, ch.toString, upscalePtSize, upscaleLength, antialias=false)
       val sprite: BufferedImage = generateDistanceField(graphics, upscaleImage, upscale, spread, spriteSize)
       g2.drawImage(sprite, col * spriteSize, row * spriteSize, null)
-      codePoints(i) = ch.toInt
-      boundingRects(i) = Rect2D(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
-      advances(i) = fontMetrics.charWidth(ch.toInt)
+
+      val codePoint = ch.toInt
+      val boundingRect = Rect2D(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
+      val advance = fontMetrics.charWidth(codePoint)
+      glyphs(i) = GlyphInfo(i, codePoint, boundingRect, advance)
     }
     println(" done!")
     g2.dispose()
@@ -168,7 +168,7 @@ object GlyphSheet {
 
     val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize, sheetWidth, sheetHeight, spriteSize,
         fontMetrics.getHeight, fontMetrics.getAscent, fontMetrics.getDescent,
-        numGlyphs, codePoints, boundingRects, advances)
+        numGlyphs, glyphs)
 
     GlyphSheet(metrics, spriteSheet)
   }
@@ -216,9 +216,7 @@ object GlyphSheet {
 
     // pre-calculate glyph widths in pixels
     val numGlyphs: Int = numSpritesAlongEdge * numSpritesAlongEdge
-    val boundingRects: Array[Rect2D] = Array.ofDim(numGlyphs)
-    val codePoints: Array[Int] = Array.ofDim(numGlyphs)
-    val advances: Array[Int] = Array.ofDim(numGlyphs)
+    val glyphs: Array[GlyphInfo] = Array.ofDim(numGlyphs)
 
     val fontMetrics: FontMetrics = graphics.createCompatibleImage(1, 1).getGraphics
         .getFontMetrics(new Font(typeface, Font.PLAIN, ptSize))
@@ -241,9 +239,10 @@ object GlyphSheet {
       val sprite: BufferedImage = generateDownscaleFromDistanceField(graphics, upscaleImage, upscale, spread, spriteSize)
       g2.drawImage(sprite, col * spriteSize, row * spriteSize, null)
 
-      codePoints(i) = ch.toInt
-      boundingRects(i) = Rect2D(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
-      advances(i) = fontMetrics.charWidth(ch.toInt)
+      val codePoint = ch.toInt
+      val boundingRect = Rect2D(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
+      val advance = fontMetrics.charWidth(codePoint)
+      glyphs(i) = GlyphInfo(i, codePoint, boundingRect, advance)
     }
     println(" done!")
     g2.dispose()
@@ -251,7 +250,7 @@ object GlyphSheet {
 
     val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize, sheetWidth, sheetHeight, spriteSize,
       fontMetrics.getHeight, fontMetrics.getAscent, fontMetrics.getDescent,
-      numGlyphs, codePoints, boundingRects, advances)
+      numGlyphs, glyphs)
 
     GlyphSheet(metrics, spriteSheet)
   }
