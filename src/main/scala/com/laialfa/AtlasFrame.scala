@@ -41,7 +41,7 @@ class AtlasFrame extends MainFrame {
 
   private var optGlyphSheet: Option[GlyphSheet] = None
 
-  def setGlyphSheet(glyphSheet: GlyphSheet) {
+  def setGlyphSheet(glyphSheet: GlyphSheet): Unit = {
     optGlyphSheet = Some(glyphSheet)
   }
 
@@ -49,7 +49,7 @@ class AtlasFrame extends MainFrame {
 
   private var optCurrentFile: Option[File] = None
 
-  def clearCurrentFile() {
+  def clearCurrentFile(): Unit = {
     optCurrentFile = None
   }
 
@@ -91,7 +91,7 @@ class AtlasFrame extends MainFrame {
   }
 
   contents = new Panel {
-    override def paint(g: Graphics2D) {
+    override def paint(g: Graphics2D): Unit = {
       g.setColor(Color.white)
 
       if (optGlyphSheet.isEmpty) {
@@ -173,7 +173,7 @@ class AtlasFrame extends MainFrame {
    *
    * @param file    to image file
    */
-  private def load(file: File) {
+  private def load(file: File): Unit = {
     val metricsFile: File = getMetricsFile(file)
 
     try {
@@ -194,7 +194,7 @@ class AtlasFrame extends MainFrame {
    *
    * @param file    to image file
    */
-  private def save(file: File) {
+  private def save(file: File): Unit = {
     if (optGlyphSheet.isEmpty) {
       Dialog.showMessage(contents.head, "No glyph atlas to save.\nCreate or open one first.")
       return
@@ -222,7 +222,7 @@ class AtlasFrame extends MainFrame {
     }
   }
 
-  private def saveAs() {
+  private def saveAs(): Unit = {
     if (optGlyphSheet.isEmpty) {
       Dialog.showMessage(contents.head, "No glyph atlas to save.\nCreate or open one first.")
       return
@@ -267,7 +267,7 @@ class AtlasFrame extends MainFrame {
    * @param x         screen coordinate (left side baseline)
    * @param y         screen coordinate (baseline)
    */
-  private def drawString(g: Graphics2D, text: String, color: Color, ptSize: Int, x: Int, y: Int) {
+  private def drawString(g: Graphics2D, text: String, color: Color, ptSize: Int, x: Int, y: Int): Unit = {
     val glyphSheet: GlyphSheet = optGlyphSheet.get
 
     val scaleFactor: Double = ptSize.toDouble / glyphSheet.metrics.ptSize
@@ -322,7 +322,7 @@ class AtlasFrame extends MainFrame {
   /**
    * Font metrics version for comparison purposes.
    */
-  private def drawStringJava(g: Graphics2D, text: String, color: Color, ptSize: Int, x: Int, y: Int) {
+  private def drawStringJava(g: Graphics2D, text: String, color: Color, ptSize: Int, x: Int, y: Int): Unit = {
     g.setColor(color)
     val typeface: String =
       if (optGlyphSheet.isDefined) {
