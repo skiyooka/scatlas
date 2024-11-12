@@ -1,5 +1,5 @@
 /**
- * Copyright 2014  Sumio Kiyooka
+ * Copyright 2021  Sumio Kiyooka
  *
  * This file is part of Laialfa.
  *
@@ -18,7 +18,7 @@
  */
 package com.laialfa.glyph
 
-import java.awt.Rectangle
+import com.laialfa.geom.Rect2D
 import scala.xml.{Node, Elem}
 
 
@@ -27,6 +27,9 @@ object GlyphMetrics {
   def fromXML(node: Node): GlyphMetrics = {
     val typeface: String = (node \ "typeface").text
     val ptSize: Int = (node \ "ptSize").text.toInt
+    val sheetWidth: Int = (node \ "sheetWidth").text.toInt
+    val sheetHeight: Int = (node \ "sheetHeight").text.toInt
+    val spriteSize: Int = (node \ "spriteSize").text.toInt
     val height: Int = (node \ "height").text.toInt
     val ascent: Int = (node \ "ascent").text.toInt
     val descent: Int = (node \ "descent").text.toInt
@@ -34,38 +37,38 @@ object GlyphMetrics {
 
     val codePoints: Seq[Int] =
       for {
-        glyphNode: Node <- (node \ "glyphs" \ "glyph")
+        glyphNode: Node <- node \ "glyphs" \ "glyph"
         if glyphNode.label == "glyph"
       } yield {
         val hexFormat: String = (glyphNode \ "@codePoint").text  // e.g. U+0020
         Integer.parseInt(hexFormat.substring(2), 16)
       }
 
-    // These rectangles are for use by OpenGL and thus the origin 0,0 is in
-    // the bottom left corner.  The rects are within this class instead of
-    // GlyphSheet in order to consolidate loading/saving to one class.
-    val boundingRects: Seq[Rectangle] =
+    // The rects are within this class instead of GlyphSheet in order to
+    // consolidate loading/saving to one class.
+    val boundingRects: Seq[Rect2D] =
       for {
-        glyphNode: Node <- (node \ "glyphs" \ "glyph")
+        glyphNode: Node <- node \ "glyphs" \ "glyph"
         if glyphNode.label == "glyph"
       } yield {
         val x: Int = (glyphNode \ "@x").text.toInt
         val y: Int = (glyphNode \ "@y").text.toInt
-        val w: Int = (glyphNode \ "@width").text.toInt
-        val h: Int = (glyphNode \ "@height").text.toInt
-        new Rectangle(x, y, w, h)
+        val width: Int = (glyphNode \ "@width").text.toInt
+        val height: Int = (glyphNode \ "@height").text.toInt
+        Rect2D(x, y, width, height)
       }
 
     val advances: Seq[Int] =
       for {
-        glyphNode: Node <- (node \ "glyphs" \ "glyph")
+        glyphNode: Node <- node \ "glyphs" \ "glyph"
         if glyphNode.label == "glyph"
       } yield {
         (glyphNode \ "@advance").text.toInt
       }
 
-    GlyphMetrics(typeface, ptSize, height, ascent, descent, numGlyphs,
-        codePoints.toArray, boundingRects.toArray, advances.toArray)
+    GlyphMetrics(typeface, ptSize, sheetWidth, sheetHeight, spriteSize,
+      height, ascent, descent,
+      numGlyphs, codePoints.toArray, boundingRects.toArray, advances.toArray)
   }
 }
 
@@ -76,6 +79,9 @@ object GlyphMetrics {
  *
  * @param typeface         font name
  * @param ptSize           ptSize used when generating glyphSheet
+ * @param sheetWidth       width of sprite sheet (pixels)
+ * @param sheetHeight      height of sprite sheet (pixels)
+ * @param spriteSize       length of square edge (pixels)
  * @param height           font height
  * @param ascent           above the baseline
  * @param descent          below the baseline (might not include leading)
@@ -86,18 +92,24 @@ object GlyphMetrics {
  */
 case class GlyphMetrics(typeface: String,
                           ptSize: Int,
+                      sheetWidth: Int,
+                     sheetHeight: Int,
+                      spriteSize: Int,
                           height: Int,
                           ascent: Int,
                          descent: Int,
                        numGlyphs: Int,
                       codePoints: Array[Int],
-                   boundingRects: Array[Rectangle],
+                   boundingRects: Array[Rect2D],
                         advances: Array[Int]) {
 
   def toXML: Elem = {
     <glyphMetrics>
       <typeface>{typeface}</typeface>
       <ptSize>{ptSize}</ptSize>
+      <sheetWidth>{sheetWidth}</sheetWidth>
+      <sheetHeight>{sheetHeight}</sheetHeight>
+      <spriteSize>{spriteSize}</spriteSize>
       <height>{height}</height>
       <ascent>{ascent}</ascent>
       <descent>{descent}</descent>
@@ -107,7 +119,7 @@ case class GlyphMetrics(typeface: String,
           for (i: Int <- 0 until numGlyphs) yield {
             val hexFormat: String = "U+%04x".format(codePoints(i))
             val advance: Int = advances(i)
-            val rect: Rectangle = boundingRects(i)
+            val rect: Rect2D = boundingRects(i)
             <glyph index={i.toString}
                codePoint={hexFormat}
                        x={rect.x.toString}

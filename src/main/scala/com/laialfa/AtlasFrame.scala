@@ -1,5 +1,5 @@
 /**
- * Copyright 2014  Sumio Kiyooka
+ * Copyright 2021  Sumio Kiyooka
  *
  * This file is part of Laialfa.
  *
@@ -18,8 +18,9 @@
  */
 package com.laialfa
 
+import com.laialfa.geom.Rect2D
 import com.laialfa.glyph.{GlyphMetrics, GlyphSheet}
-import java.awt.{Rectangle, FontMetrics, Dimension, Font, Graphics2D, Color}
+import java.awt.{FontMetrics, Dimension, Font, Graphics2D, Color, Stroke, BasicStroke}
 import java.awt.image.BufferedImage
 import java.io.{FileWriter, IOException, File}
 import javax.imageio.ImageIO
@@ -40,7 +41,7 @@ class AtlasFrame extends MainFrame {
 
   private var optGlyphSheet: Option[GlyphSheet] = None
 
-  def setGlyphSheet(glyphSheet: GlyphSheet) {
+  def setGlyphSheet(glyphSheet: GlyphSheet): Unit = {
     optGlyphSheet = Some(glyphSheet)
   }
 
@@ -48,7 +49,7 @@ class AtlasFrame extends MainFrame {
 
   private var optCurrentFile: Option[File] = None
 
-  def clearCurrentFile() {
+  def clearCurrentFile(): Unit = {
     optCurrentFile = None
   }
 
@@ -90,7 +91,7 @@ class AtlasFrame extends MainFrame {
   }
 
   contents = new Panel {
-    override def paint(g: Graphics2D) {
+    override def paint(g: Graphics2D): Unit = {
       g.setColor(Color.white)
 
       if (optGlyphSheet.isEmpty) {
@@ -101,10 +102,15 @@ class AtlasFrame extends MainFrame {
       val glyphSheet: GlyphSheet = optGlyphSheet.get
 
       if (drawGridLines) {
+        val g2d: Graphics2D = g.create().asInstanceOf[Graphics2D]  // copy of the Graphics instance
+        val dashed: Stroke = new BasicStroke(0.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 1.0f, Array(4.0f, 8.0f), 0)
+        g2d.setStroke(dashed);
+
         for (i: Int <- 0 until glyphSheet.metrics.numGlyphs) {
-          val rect: Rectangle = glyphSheet.metrics.boundingRects(i)
-          g.drawRect(rect.x, rect.y, rect.width, rect.height)
+          val rect: Rect2D = glyphSheet.metrics.boundingRects(i)
+          g2d.drawRect(rect.x, rect.y, rect.width, rect.height)
         }
+        g2d.dispose()
       }
       g.drawImage(glyphSheet.image, 0, 0, null)
 
@@ -167,7 +173,7 @@ class AtlasFrame extends MainFrame {
    *
    * @param file    to image file
    */
-  private def load(file: File) {
+  private def load(file: File): Unit = {
     val metricsFile: File = getMetricsFile(file)
 
     try {
@@ -188,7 +194,7 @@ class AtlasFrame extends MainFrame {
    *
    * @param file    to image file
    */
-  private def save(file: File) {
+  private def save(file: File): Unit = {
     if (optGlyphSheet.isEmpty) {
       Dialog.showMessage(contents.head, "No glyph atlas to save.\nCreate or open one first.")
       return
@@ -216,7 +222,7 @@ class AtlasFrame extends MainFrame {
     }
   }
 
-  private def saveAs() {
+  private def saveAs(): Unit = {
     if (optGlyphSheet.isEmpty) {
       Dialog.showMessage(contents.head, "No glyph atlas to save.\nCreate or open one first.")
       return
@@ -261,7 +267,7 @@ class AtlasFrame extends MainFrame {
    * @param x         screen coordinate (left side baseline)
    * @param y         screen coordinate (baseline)
    */
-  private def drawString(g: Graphics2D, text: String, color: Color, ptSize: Int, x: Int, y: Int) {
+  private def drawString(g: Graphics2D, text: String, color: Color, ptSize: Int, x: Int, y: Int): Unit = {
     val glyphSheet: GlyphSheet = optGlyphSheet.get
 
     val scaleFactor: Double = ptSize.toDouble / glyphSheet.metrics.ptSize
@@ -276,10 +282,7 @@ class AtlasFrame extends MainFrame {
       val ch: Char = text.charAt(charPos)
       val unscaledCharWidth: Int = glyphSheet.metrics.advances(ch.toInt)
 
-      val srcRect: Rectangle = glyphSheet.metrics.boundingRects(ch.toInt)
-
-      // this craziness because 0 is bottom of image in OpenGL
-      val ySrc: Int = glyphSheet.height - srcRect.y - SPRITE_SIZE
+      val srcRect: Rect2D = glyphSheet.metrics.boundingRects(ch.toInt)
 
       val shim: Double = (SPRITE_SIZE - unscaledCharWidth) / 2.0
 
@@ -292,9 +295,9 @@ class AtlasFrame extends MainFrame {
                   yDest + destDimen,
 
                   srcRect.x,
-                  ySrc,
+                  srcRect.y,
                   srcRect.x + srcRect.width,
-                  ySrc + srcRect.height,
+                  srcRect.y + srcRect.height,
                   null)
 
       unscaledAnchorX += unscaledCharWidth  // horizontal advance includes spacing
@@ -319,7 +322,7 @@ class AtlasFrame extends MainFrame {
   /**
    * Font metrics version for comparison purposes.
    */
-  private def drawStringJava(g: Graphics2D, text: String, color: Color, ptSize: Int, x: Int, y: Int) {
+  private def drawStringJava(g: Graphics2D, text: String, color: Color, ptSize: Int, x: Int, y: Int): Unit = {
     g.setColor(color)
     val typeface: String =
       if (optGlyphSheet.isDefined) {

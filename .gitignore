@@ -1,4 +1,19 @@
-*.iml
-*.ipr
-*.iws
-*.idea
+
+# Bloop is a Scala implementation of the Build Server Protocol (BSP)
+/.bloop
+/.bsp
+
+# Metals is VS Code extension that implements Language Server Protocol (LSP) for Scala
+/.vscode
+/.metals
+
+
+/project/.bloop
+
+# sbt: the project directory is another build inside your build, which knows how to build your build
+/project/project
+
+/project/target
+/project/metals.sbt
+
+/target

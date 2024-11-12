@@ -1,5 +1,5 @@
 /**
- * Copyright 2014  Sumio Kiyooka
+ * Copyright 2021  Sumio Kiyooka
  *
  * This file is part of Laialfa.
  *
@@ -18,10 +18,13 @@
  */
 package com.laialfa.glyph
 
+import com.laialfa.geom.Rect2D
+import java.awt.font.FontRenderContext
+import java.awt.font.TextLayout
+import java.awt.geom.AffineTransform
 import java.awt.image.BufferedImage
-import java.awt.{Rectangle, GraphicsConfiguration, FontMetrics, Color, RenderingHints, Transparency, Font, GraphicsEnvironment}
-import java.nio.ByteBuffer
-
+import java.awt.{GraphicsConfiguration, FontMetrics, Color, RenderingHints}
+import java.awt.{Transparency, Font, GraphicsEnvironment}
 import scala.swing.Graphics2D
 
 
@@ -33,14 +36,12 @@ object GlyphSheet {
    * Place all glyph textures onto a single sheet containing 16 x 16 = 256
    * glyphs:
    *
-   * 240 ...            255
+   *     0  1  2  3  4 ... 15
+   *    16 17 18 19 20 ... 31
    *
-   * ...
+   *   ...
    *
-   *  16 17 18 19 20 ... 31
-   *   0  1  2  3  4 ... 15
-   *
-   * This is the ordering that OpenGL expects due to its coordinate system.
+   *   240 ...            255
    *
    * @param typeface      font name
    * @param spriteSize    of each glyph square (e.g. 64)
@@ -57,12 +58,13 @@ object GlyphSheet {
 
     val numSpritesAlongEdge: Int = 16  // 256 total glyphs
 
-    val length: Int = numSpritesAlongEdge * spriteSize
-    val spriteSheet: BufferedImage = graphics.createCompatibleImage(length, length, Transparency.TRANSLUCENT)
+    val sheetWidth: Int = numSpritesAlongEdge * spriteSize
+    val sheetHeight: Int = numSpritesAlongEdge * spriteSize
+    val spriteSheet: BufferedImage = graphics.createCompatibleImage(sheetWidth, sheetHeight, Transparency.TRANSLUCENT)
 
     // pre-calculate glyph widths in pixels
     val numGlyphs: Int = numSpritesAlongEdge * numSpritesAlongEdge
-    val boundingRects: Array[Rectangle] = Array.ofDim(numGlyphs)
+    val boundingRects: Array[Rect2D] = Array.ofDim(numGlyphs)
     val codePoints: Array[Int] = Array.ofDim(numGlyphs)
     val advances: Array[Int] = Array.ofDim(numGlyphs)
 
@@ -75,20 +77,17 @@ object GlyphSheet {
     for (i: Int <- 0 until numGlyphs) {
       val col: Int = i % numSpritesAlongEdge
       val row: Int = i / numSpritesAlongEdge
-      val ch: Char = i.toChar
+      val ch: Char = this.lookupChar(i)
 
       val sprite: BufferedImage = generateImage(graphics, typeface, ch.toString, ptSize, spriteSize, antialias=true)
-      g2.drawImage(sprite,
-        col * spriteSize,
-        (numSpritesAlongEdge - 1 - row) * spriteSize, null)
-
-      codePoints(i) = i
-      boundingRects(i) = new Rectangle(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
-      advances(i) = fontMetrics.charWidth(i)
+      g2.drawImage(sprite, col * spriteSize, row * spriteSize, null)
+      codePoints(i) = ch.toInt
+      boundingRects(i) = Rect2D(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
+      advances(i) = fontMetrics.charWidth(ch.toInt)
     }
     g2.dispose()
 
-    val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize,
+    val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize, sheetWidth, sheetHeight, spriteSize,
       fontMetrics.getHeight, fontMetrics.getAscent, fontMetrics.getDescent,
       numGlyphs, codePoints, boundingRects, advances)
 
@@ -104,14 +103,12 @@ object GlyphSheet {
    * Place all glyph textures onto a single sheet containing 16 x 16 = 256
    * glyphs:
    *
-   * 240 ...            255
+   *     0  1  2  3  4 ... 15
+   *    16 17 18 19 20 ... 31
    *
-   * ...
+   *   ...
    *
-   *  16 17 18 19 20 ... 31
-   *   0  1  2  3  4 ... 15
-   *
-   * This is the ordering that OpenGL expects due to its coordinate system.
+   *   240 ...            255
    *
    * @param typeface      font name
    * @param spriteSize    of each glyph square (e.g. 64)
@@ -131,12 +128,13 @@ object GlyphSheet {
 
     val numSpritesAlongEdge: Int = 16  // 256 total glyphs
 
-    val length: Int = numSpritesAlongEdge * spriteSize
-    val spriteSheet: BufferedImage = graphics.createCompatibleImage(length, length, Transparency.TRANSLUCENT)
+    val sheetWidth: Int = numSpritesAlongEdge * spriteSize
+    val sheetHeight: Int = numSpritesAlongEdge * spriteSize
+    val spriteSheet: BufferedImage = graphics.createCompatibleImage(sheetWidth, sheetHeight, Transparency.TRANSLUCENT)
 
     // pre-calculate glyph widths in pixels
     val numGlyphs: Int = numSpritesAlongEdge * numSpritesAlongEdge
-    val boundingRects: Array[Rectangle] = Array.ofDim(numGlyphs)
+    val boundingRects: Array[Rect2D] = Array.ofDim(numGlyphs)
     val codePoints: Array[Int] = Array.ofDim(numGlyphs)
     val advances: Array[Int] = Array.ofDim(numGlyphs)
 
@@ -149,32 +147,26 @@ object GlyphSheet {
     val upscalePtSize: Int = ptSize * upscale
     val upscaleLength: Int = spriteSize * upscale
 
-    print("Generating " + numGlyphs + " glyphs...")
+    println("Generating " + numGlyphs + " glyphs...")
     for (i: Int <- 0 until numGlyphs) {
-      print(" ")
+      print("  ")
       print(i)
-      if (i % 32 == 0) {
-        println()
-      }
       val col: Int = i % numSpritesAlongEdge
       val row: Int = i / numSpritesAlongEdge
-      val ch: Char = i.toChar
+      val ch: Char = this.lookupChar(i)
 
       val upscaleImage: BufferedImage = generateImage(graphics, typeface, ch.toString, upscalePtSize, upscaleLength, antialias=false)
       val sprite: BufferedImage = generateDistanceField(graphics, upscaleImage, upscale, spread, spriteSize)
-      g2.drawImage(sprite,
-        col * spriteSize,
-        (numSpritesAlongEdge - 1 - row) * spriteSize, null)
-
-      codePoints(i) = i
-      boundingRects(i) = new Rectangle(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
-      advances(i) = fontMetrics.charWidth(i)
+      g2.drawImage(sprite, col * spriteSize, row * spriteSize, null)
+      codePoints(i) = ch.toInt
+      boundingRects(i) = Rect2D(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
+      advances(i) = fontMetrics.charWidth(ch.toInt)
     }
     println(" done!")
     g2.dispose()
 
 
-    val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize,
+    val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize, sheetWidth, sheetHeight, spriteSize,
         fontMetrics.getHeight, fontMetrics.getAscent, fontMetrics.getDescent,
         numGlyphs, codePoints, boundingRects, advances)
 
@@ -182,42 +174,129 @@ object GlyphSheet {
   }
 
   /**
-   * Create a byte buffer of TYPE_INT_ARGB that is suitable for glTexImage2D
-   * or gluBuild2DMipmaps.
+   * Generate heavily antialiased translucent glyphs from a signed distance
+   * field suitable for downscaling only.
    *
    * This is a pure function.
    *
-   * @param bi    input BufferedImage
+   * Depending on the parameters, this method can take quite a bit of time:
+   *   upscale of 2 = tolerable speed, 8 = high quality but slow.
+   *
+   * Place all glyph textures onto a single sheet containing 16 x 16 = 256
+   * glyphs:
+   *
+   *     0  1  2  3  4 ... 15
+   *    16 17 18 19 20 ... 31
+   *
+   *   ...
+   *
+   *   240 ...            255
+   *
+   * @param typeface      font name
+   * @param spriteSize    of each glyph square (e.g. 64)
+   * @param upscale       scale factor of high-res upscale version (e.g. 8)
+   * @param spread        spread from edge (pixels e.g. 4)
    */
-  def createByteBuffer(bi: BufferedImage): ByteBuffer = {
-    val pixels: ByteBuffer = ByteBuffer.allocate(bi.getWidth * bi.getHeight * 4)
+  def generateDownscale(typeface: String,
+                      spriteSize: Int,
+                         upscale: Int,
+                          spread: Int): GlyphSheet = {
+    require(spriteSize * upscale <= 8192)  // don't allow anything too ridiculous
 
-    // OpenGL pixel buffers start on the bottom row and work upwards i.e. the
-    // origin is in the bottom left corner.
-    for (y: Int <- 0 until bi.getHeight) {
-      for (x: Int <- 0 until bi.getWidth) {
-        val argb: Int = bi.getRGB(x, bi.getHeight - 1 - y)  // TYPE_INT_ARGB
+    val graphics: GraphicsConfiguration = GraphicsEnvironment.getLocalGraphicsEnvironment.
+        getDefaultScreenDevice.getDefaultConfiguration
 
-        val alpha: Byte = ((argb >> 24) & 0xff).toByte
-        val   red: Byte = ((argb >> 16) & 0xff).toByte
-        val green: Byte = ((argb >>  8) & 0xff).toByte
-        val  blue: Byte =         (argb & 0xff).toByte
+    val ptSize: Int = getMaxPtSize(graphics, typeface, spriteSize, spread)
 
-        // OpenGL texture takes RGBA
-        pixels.put(red)
-        pixels.put(green)
-        pixels.put(blue)
-        pixels.put(alpha)
-      }
+    val numSpritesAlongEdge: Int = 16  // 256 total glyphs
+
+    val sheetWidth: Int = numSpritesAlongEdge * spriteSize
+    val sheetHeight: Int = numSpritesAlongEdge * spriteSize
+    val spriteSheet: BufferedImage = graphics.createCompatibleImage(sheetWidth, sheetHeight, Transparency.TRANSLUCENT)
+
+    // pre-calculate glyph widths in pixels
+    val numGlyphs: Int = numSpritesAlongEdge * numSpritesAlongEdge
+    val boundingRects: Array[Rect2D] = Array.ofDim(numGlyphs)
+    val codePoints: Array[Int] = Array.ofDim(numGlyphs)
+    val advances: Array[Int] = Array.ofDim(numGlyphs)
+
+    val fontMetrics: FontMetrics = graphics.createCompatibleImage(1, 1).getGraphics
+        .getFontMetrics(new Font(typeface, Font.PLAIN, ptSize))
+
+    val g2: Graphics2D = spriteSheet.createGraphics()
+    g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+
+    val upscalePtSize: Int = ptSize * upscale
+    val upscaleLength: Int = spriteSize * upscale
+
+    println("Generating " + numGlyphs + " glyphs...")
+    for (i: Int <- 0 until numGlyphs) {
+      print("  ")
+      print(i)
+      val col: Int = i % numSpritesAlongEdge
+      val row: Int = i / numSpritesAlongEdge
+      val ch: Char = this.lookupChar(i)
+
+      val upscaleImage: BufferedImage = generateImage(graphics, typeface, ch.toString, upscalePtSize, upscaleLength, antialias=false)
+      val sprite: BufferedImage = generateDownscaleFromDistanceField(graphics, upscaleImage, upscale, spread, spriteSize)
+      g2.drawImage(sprite, col * spriteSize, row * spriteSize, null)
+
+      codePoints(i) = ch.toInt
+      boundingRects(i) = Rect2D(col * spriteSize, row * spriteSize, spriteSize, spriteSize)
+      advances(i) = fontMetrics.charWidth(ch.toInt)
     }
+    println(" done!")
+    g2.dispose()
 
-    pixels.rewind()
-    pixels
+
+    val metrics: GlyphMetrics = GlyphMetrics(typeface, ptSize, sheetWidth, sheetHeight, spriteSize,
+      fontMetrics.getHeight, fontMetrics.getAscent, fontMetrics.getDescent,
+      numGlyphs, codePoints, boundingRects, advances)
+
+    GlyphSheet(metrics, spriteSheet)
   }
 
   /////////////////////
   // private methods //
   /////////////////////
+
+  private def lookupChar(index: Int): Char = {
+    // Codepage 437
+    val mapping = Array(
+      '\u0000', '\u263A', '\u263B', '\u2665', '\u2666', '\u2663', '\u2660', '\u2022',
+      '\u25D8', '\u25CB', '\u25D9', '\u2642', '\u2640', '\u266A', '\u266B', '\u263C',
+      '\u25BA', '\u25C4', '\u2195', '\u203C', '\u00B6', '\u00A7', '\u25AC', '\u21A8',
+      '\u2191', '\u2193', '\u2192', '\u2190', '\u221F', '\u2194', '\u25B2', '\u25BC',
+    ) ++ Array(
+      ' ', '!', '"', '#', '$', '%', '&', '\'', '(', ')', '*', '+', ',', '-', '.', '/',
+      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '<', '=', '>', '?'
+    ) ++ Array(
+      '@', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O',
+      'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '[', '\\', ']', '^', '_'
+    ) ++ Array(
+      '`', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o',
+      'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '{', '|', '}', '~', '\u2302'
+    ) ++ Array(
+      '\u00C7', '\u00FC', '\u00E9', '\u00E2', '\u00E4', '\u00E0', '\u00E5', '\u00E7',
+      '\u00EA', '\u00EB', '\u00E8', '\u00EF', '\u00EE', '\u00EC', '\u00C4', '\u00C5',
+      '\u00C9', '\u00E6', '\u00C6', '\u00F4', '\u00F6', '\u00F2', '\u00FB', '\u00F9',
+      '\u00FF', '\u00D6', '\u00DC', '\u00A2', '\u00A3', '\u00A5', '\u20A7', '\u0192',
+      '\u00E1', '\u00ED', '\u00F3', '\u00FA', '\u00F1', '\u00D1', '\u00AA', '\u00BA',
+      '\u00BF', '\u2310', '\u00AC', '\u00BD', '\u00BC', '\u00A1', '\u00AB', '\u00BB',
+      '\u2591', '\u2592', '\u2593', '\u2502', '\u2524', '\u2561', '\u2562', '\u2556',
+      '\u2555', '\u2563', '\u2551', '\u2557', '\u255D', '\u255C', '\u255B', '\u2510',
+      '\u2514', '\u2534', '\u252C', '\u251C', '\u2500', '\u253C', '\u255E', '\u255F',
+      '\u255A', '\u2554', '\u2569', '\u2566', '\u2560', '\u2550', '\u256C', '\u2567',
+      '\u2568', '\u2564', '\u2565', '\u2559', '\u2558', '\u2552', '\u2553', '\u256B',
+      '\u256A', '\u2518', '\u250C', '\u2588', '\u2584', '\u258C', '\u2590', '\u2580',
+      '\u03B1', '\u00DF', '\u0393', '\u03C0', '\u03A3', '\u03C3', '\u00B5', '\u03C4',
+      '\u03A6', '\u0398', '\u03A9', '\u03B4', '\u221E', '\u03C6', '\u03B5', '\u2229',
+      '\u2261', '\u00B1', '\u2265', '\u2264', '\u2320', '\u2321', '\u00F7', '\u2248',
+      '\u00B0', '\u2219', '\u00B7', '\u221A', '\u207F', '\u00B2', '\u25A0', '\u00A0'
+    )
+
+    return mapping(index)
+  }
 
   /**
    * Create a square image of a glyph with the following properties:
@@ -250,9 +329,34 @@ object GlyphSheet {
       g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
     }
     g2.setColor(Color.white)
-    g2.setFont(new Font(typeface, Font.PLAIN, ptSize))
+    val font: Font = new Font(typeface, Font.PLAIN, ptSize)
+    g2.setFont(font)
 
+    // Different typefaces have varying levels of accurate font metrics
+    // especially for non-standard chars. For example, Arial is more complete
+    // than Verdana on mac for non-standard codepage 437 characters.
+    //
+    // TextLayout can return accurate measurements.
+    val affine: AffineTransform = new AffineTransform()
+    val frc: FontRenderContext = new FontRenderContext(affine, false, false)
+    val layout: TextLayout = new TextLayout(symbol, font, frc)
+    val charWidth: Double = layout.getBounds().getWidth()
     val fm: FontMetrics = g2.getFontMetrics
+
+    print(" generateImage(")
+    print(symbol)
+    print(",")
+    print(ptSize)
+    print(",")
+    print(spriteSize)
+    print(",")
+    print(antialias)
+    print(")  fm.stringWidth:")
+    print(fm.stringWidth(symbol))
+    print("  charWidth:")
+    print(charWidth)
+    println("")
+
     g2.drawString(symbol, spriteSize/2 - fm.stringWidth(symbol)/2, fm.getAscent)
     g2.dispose()
 
@@ -286,6 +390,27 @@ object GlyphSheet {
    */
   private def signedDistanceAsARGB(signedDistance: Double, spread: Int): Int = {
     val alpha: Double = 0.5 + 0.5 * (signedDistance / spread)
+
+    val clampedAlpha: Double = math.min(1.0, math.max(0.0, alpha))
+
+    val alphaByte: Int = (clampedAlpha * 0xff).toInt
+
+    (alphaByte << 24) | 0xffffff  // alpha only as glyph is white
+  }
+
+  /**
+   * Convert signed distance to antialiased ARGB for downscaling only.
+   *
+   * This is a pure function.
+   *
+   * @param signedDistance    of a pixel from the glyph
+   * @param spread            typically 4
+   *
+   * @return ARGB value suitable for BufferedImage.setRGB
+   */
+  private def downscaleFromSignedDistanceAsARGB(signedDistance: Double, spread: Int): Int = {
+    val alpha: Double = 0.6 + (signedDistance / spread)
+
     val clampedAlpha: Double = math.min(1.0, math.max(0.0, alpha))
 
     val alphaByte: Int = (clampedAlpha * 0xff).toInt
@@ -384,6 +509,52 @@ object GlyphSheet {
           Point((x * upscale) + (upscale / 2), (y * upscale) + (upscale / 2)),
           bitmap, upscale, spread)
         val argb: Int = signedDistanceAsARGB(signedDistance, spread)
+        output.setRGB(x, y, argb)
+      }
+    }
+
+    output
+  }
+
+  /**
+   * Generate antialiased translucent glyph from signed distance field for
+   * spriteSize from larger sample.
+   *
+   * This is a pure function.
+   *
+   * @param graphics      graphics configuration
+   * @param image         binary input image with black=transparent and
+   *                      white=opaque
+   * @param upscale       scale factor of high-res upscale version (e.g. 8)
+   * @param spread        spread from edge (pixels e.g. 4)
+   * @param spriteSize    resulting sprite size (pixels)
+   *
+   * @return distance field
+   */
+  private def generateDownscaleFromDistanceField(graphics: GraphicsConfiguration,
+                                                    image: BufferedImage,
+                                                  upscale: Int,
+                                                   spread: Int,
+                                               spriteSize: Int): BufferedImage = {
+    require(spriteSize * upscale == image.getWidth)
+    require(spriteSize * upscale == image.getHeight)
+
+    val output: BufferedImage = graphics.createCompatibleImage(spriteSize, spriteSize, Transparency.TRANSLUCENT)
+
+    // note coordinates y,x
+    val bitmap: Array[Array[Boolean]] = Array.ofDim(image.getHeight, image.getWidth)
+    for (y: Int <- 0 until image.getHeight) {
+      for (x: Int <- 0 until image.getWidth) {
+        bitmap(y)(x) = (image.getRGB(x, y) & 0x808080) != 0
+      }
+    }
+
+    for (y: Int <- 0 until spriteSize) {
+      for (x: Int <- 0 until spriteSize) {
+        val signedDistance: Double = findSignedDistance(
+          Point((x * upscale) + (upscale / 2), (y * upscale) + (upscale / 2)),
+          bitmap, upscale, spread)
+        val argb: Int = downscaleFromSignedDistanceAsARGB(signedDistance, spread)
         output.setRGB(x, y, argb)
       }
     }

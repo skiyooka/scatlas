@@ -1,5 +1,5 @@
 /**
- * Copyright 2014  Sumio Kiyooka
+ * Copyright 2024  Sumio Kiyooka
  *
  * This file is part of Laialfa.
  *
@@ -18,24 +18,29 @@
  */
 package com.laialfa
 
-import org.apache.log4j.Logger
-import scala.swing.{Frame, SimpleSwingApplication}
+import com.typesafe.scalalogging.Logger
+import scala.swing.Frame
 
 
 /**
  * Add to VM options:
  *   -Xdock:name=Scatlas (on mac)
  */
-object Main extends SimpleSwingApplication {
+object Main {
+  private val log: Logger = Logger(getClass)
 
-  private val log: Logger = Logger.getLogger(getClass)
+  private val AppTitle: String = "Scatlas"
 
-  private val APP_TITLE: String = "Scatlas"
+  def main(args: Array[String]): Unit = {
+    // On macs, use screen menubar instead of a menu inside the frame
+    System.setProperty("apple.laf.useScreenMenuBar", "true")
 
-  // On macs, use screen menubar instead of a menu inside the frame
-  System.setProperty("apple.laf.useScreenMenuBar", "true")
+    val frame: Frame = new AtlasFrame {
+      title = AppTitle
+    }
 
-  override def top: Frame = new AtlasFrame {
-    title = APP_TITLE
+    frame.pack()
+    frame.centerOnScreen()
+    frame.open()
   }
 }
